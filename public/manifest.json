@@ -1,0 +1,35 @@
+{
+  "name": "গেম জোন - বাংলা গেমিং প্ল্যাটফর্ম",
+  "short_name": "গেম জোন",
+  "description": "অফলাইনেও খেলা যায় এমন বাংলা গেম হাব — রেসিং কার, কুইজ আরও অনেক কিছু!",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "lang": "bn",
+  "dir": "ltr",
+  "background_color": "#0c0a09",
+  "theme_color": "#f59e0b",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono, Hind_Siliguri } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+import { PwaRegister } from "@/components/pwa-register";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,26 +14,40 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const hindSiliguri = Hind_Siliguri({
+  variable: "--font-bengali",
+  subsets: ["bengali"],
+  weight: ["300", "400", "500", "600", "700"],
+});
+
 export const metadata: Metadata = {
-  title: "Z.ai Code Scaffold - AI-Powered Development",
-  description: "Modern Next.js scaffold optimized for AI-powered development with Z.ai. Built with TypeScript, Tailwind CSS, and shadcn/ui.",
-  keywords: ["Z.ai", "Next.js", "TypeScript", "Tailwind CSS", "shadcn/ui", "AI development", "React"],
-  authors: [{ name: "Z.ai Team" }],
+  title: "গেম জোন | বাংলা গেমিং প্ল্যাটফর্ম",
+  description:
+    "অফলাইনেও খেলা যায় এমন বাংলা গেম হাব PWA — টার্বো রেসিং, বাংলা কুইজ আরও অনেক কিছু। Android-এ ইনস্টল করে খেলুন!",
+  keywords: ["গেম", "বাংলা গেম", "PWA", "রেসিং গেম", "কুইজ", "অফলাইন গেম"],
+  applicationName: "গেম জোন",
+  manifest: "/manifest.json",
   icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+    icon: [
+      { url: "/icons/favicon-64.png", sizes: "64x64", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: "/icons/apple-touch-icon.png",
   },
-  openGraph: {
-    title: "Z.ai Code Scaffold",
-    description: "AI-powered development with modern React stack",
-    url: "https://chat.z.ai",
-    siteName: "Z.ai",
-    type: "website",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "গেম জোন",
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "Z.ai Code Scaffold",
-    description: "AI-powered development with modern React stack",
-  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#0c0a09",
 };
 
 export default function RootLayout({
@@ -41,12 +56,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="bn" className="dark" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
+        className={`${geistSans.variable} ${geistMono.variable} ${hindSiliguri.variable} antialiased bg-background text-foreground [font-family:var(--font-geist-sans),var(--font-bengali),system-ui,sans-serif]`}
       >
         {children}
         <Toaster />
+        <PwaRegister />
       </body>
     </html>
   );
