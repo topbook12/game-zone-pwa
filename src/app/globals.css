@@ -120,3 +120,48 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ---------------- Turbo Rush game animations ---------------- */
+html,
+body {
+  overscroll-behavior: none;
+}
+
+@keyframes tr-pop {
+  0% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(0.92);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes tr-pulse-low {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(248, 113, 113, 0);
+  }
+  50% {
+    box-shadow: 0 0 18px 2px rgba(248, 113, 113, 0.45);
+  }
+}
+
+.tr-pop {
+  animation: tr-pop 0.55s cubic-bezier(0.2, 0.85, 0.25, 1) both;
+}
+
+/* Low-time HUD state (toggled from the game loop via classList) */
+.tr-time-low {
+  border-color: rgba(248, 113, 113, 0.8) !important;
+}
+
+.tr-time-low span {
+  color: #f87171 !important;
+  animation: tr-pulse-low 0.9s ease-in-out infinite;
+}

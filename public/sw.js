@@ -1,5 +1,5 @@
-/* গেম জোন - Service Worker (PWA অফলাইন সাপোর্ট) */
-const CACHE_NAME = 'game-zone-v1';
+/* Game Zone — Service Worker (PWA offline support) */
+const CACHE_NAME = 'game-zone-v4';
 const CORE_ASSETS = [
   '/',
   '/manifest.json',
@@ -11,7 +11,7 @@ const CORE_ASSETS = [
   '/images/quiz-banner.png',
 ];
 
-// ইনস্টল: কোর অ্যাসেট ক্যাশ করা
+// Install: cache core assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
@@ -21,7 +21,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// অ্যাক্টিভেট: পুরনো ক্যাশ মুছে ফেলা
+// Activate: purge old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches
@@ -33,7 +33,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// ফেচ: নেভিগেশন = network-first, স্ট্যাটিক = cache-first
+// Fetch: navigation = network-first, static = cache-first
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
@@ -41,7 +41,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // পেজ নেভিগেশন: নেটওয়ার্ক আগে, অফলাইনে ক্যাশ থেকে
+  // Page navigation: network first, fall back to cache when offline
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
@@ -57,13 +57,17 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // স্ট্যাটিক ফাইল: ক্যাশ আগে
+  // Static files: cache first, then network (and cache the result)
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) return cached;
       return fetch(request)
         .then((res) => {
-          if (res.ok) {
+          // Only cache responses that are actually cacheable
+          // (dev-mode chunks send no-store — never cache those)
+          const cc = (res.headers.get('cache-control') || '').toLowerCase();
+          const cacheable = res.ok && !cc.includes('no-store') && !cc.includes('no-cache');
+          if (cacheable) {
             const copy = res.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
           }

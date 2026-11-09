@@ -1,12 +1,12 @@
 /**
- * কুইজ গেমের বাংলা প্রশ্নব্যাংক
- * ৬টি ক্যাটাগরি × ১০টি প্রশ্ন
+ * Quiz game question bank (English)
+ * 6 categories x 10 questions + mixed mode
  */
 
 export interface QuizQuestion {
   question: string
   options: string[]
-  /** options অ্যারের সঠিক উত্তরের ইনডেক্স (০-৩) */
+  /** index of the correct option (0-3) */
   answer: number
   category: QuizCategoryId
 }
@@ -24,7 +24,7 @@ export interface QuizCategory {
   id: QuizCategoryId
   name: string
   emoji: string
-  /** Tailwind ক্লাস — কার্ডের বর্ডার/হাইলাইট */
+  /** Tailwind classes — card border/highlight */
   accent: string
   description: string
 }
@@ -32,139 +32,136 @@ export interface QuizCategory {
 export const QUIZ_CATEGORIES: QuizCategory[] = [
   {
     id: 'gk',
-    name: 'সাধারণ জ্ঞান',
-    emoji: '🇧🇩',
+    name: 'General',
+    emoji: '🌐',
     accent: 'border-amber-500/60 hover:border-amber-400',
-    description: 'বাংলাদেশ ও দেশ-বিদেশ',
+    description: 'World & everyday knowledge',
   },
   {
     id: 'science',
-    name: 'বিজ্ঞান',
+    name: 'Science',
     emoji: '🔬',
     accent: 'border-emerald-500/60 hover:border-emerald-400',
-    description: 'পদার্থ, প্রাণ ও মহাবিশ্ব',
+    description: 'Matter, life & the universe',
   },
   {
     id: 'history',
-    name: 'ইতিহাস',
+    name: 'History',
     emoji: '🏛️',
     accent: 'border-rose-500/60 hover:border-rose-400',
-    description: 'ঐতিহ্য ও অতীত ঘটনা',
+    description: 'Empires, wars & milestones',
   },
   {
     id: 'geography',
-    name: 'ভূগোল',
+    name: 'Geography',
     emoji: '🌍',
     accent: 'border-teal-500/60 hover:border-teal-400',
-    description: 'পৃথিবী, নদী ও পাহাড়',
+    description: 'Earth, rivers & mountains',
   },
   {
     id: 'sports',
-    name: 'খেলাধুলা',
+    name: 'Sports',
     emoji: '🏏',
     accent: 'border-orange-500/60 hover:border-orange-400',
-    description: 'ক্রিকেট, ফুটবল ও আরও',
+    description: 'Cricket, football & more',
   },
   {
     id: 'tech',
-    name: 'প্রযুক্তি',
+    name: 'Technology',
     emoji: '💻',
     accent: 'border-violet-500/60 hover:border-violet-400',
-    description: 'কম্পিউটার ও ইন্টারনেট',
+    description: 'Computers & the internet',
   },
   {
     id: 'mixed',
-    name: 'মিক্সড',
+    name: 'Mixed',
     emoji: '🎲',
     accent: 'border-zinc-400/60 hover:border-zinc-200',
-    description: 'সব ক্যাটাগরি একসাথে',
+    description: 'Everything together',
   },
 ]
 
 export const QUIZ_QUESTIONS: QuizQuestion[] = [
-  // ---------- সাধারণ জ্ঞান ----------
-  { category: 'gk', question: 'বাংলাদেশের রাজধানী কোনটি?', options: ['চট্টগ্রাম', 'ঢাকা', 'খুলনা', 'সিলেট'], answer: 1 },
-  { category: 'gk', question: 'বাংলাদেশের জাতীয় ফুল কোনটি?', options: ['গোলাপ', 'জবা', 'শাপলা', 'ডালিয়া'], answer: 2 },
-  { category: 'gk', question: 'বাংলাদেশের মহান মুক্তিযুদ্ধ কোন সালে হয়েছিল?', options: ['১৯৫২ সালে', '১৯৬৯ সালে', '১৯৭১ সালে', '১৯৭৪ সালে'], answer: 2 },
-  { category: 'gk', question: '"আমার সোনার বাংলা" জাতীয় সংগীতটি কার লেখা?', options: ['কাজী নজরুল ইসলাম', 'রবীন্দ্রনাথ ঠাকুর', 'জসীমউদ্দীন', 'সুকান্ত ভট্টাচার্য'], answer: 1 },
-  { category: 'gk', question: 'বাংলাদেশের জাতীয় মাছ কোনটি?', options: ['রুই', 'কাতলা', 'ইলিশ', 'চিতল'], answer: 2 },
-  { category: 'gk', question: 'বাংলাদেশে বর্তমানে কয়টি বিভাগ আছে?', options: ['৬টি', '৭টি', '৮টি', '৯টি'], answer: 2 },
-  { category: 'gk', question: 'জাতিসংঘের সদস্যপদ বাংলাদেশ পায় কোন সালে?', options: ['১৯৭২ সালে', '১৯৭৩ সালে', '১৯৭৪ সালে', '১৯৭৫ সালে'], answer: 2 },
-  { category: 'gk', question: 'বাংলাদেশের প্রথম রাষ্ট্রপতি কে ছিলেন?', options: ['শেখ মুজিবুর রহমান', 'জিয়াউর রহমান', 'মনসুর আলী', 'খন্দকার মোশতাক'], answer: 0 },
-  { category: 'gk', question: 'বাংলাদেশের জাতীয় ফল কোনটি?', options: ['আম', 'কাঁঠাল', 'লিচু', 'কলা'], answer: 1 },
-  { category: 'gk', question: 'বাংলাদেশের স্বাধীনতা দিবস কোনটি?', options: ['২১ ফেব্রুয়ারি', '১৬ ডিসেম্বর', '২৬ মার্চ', '১৭ মার্চ'], answer: 2 },
+  // ---------- General ----------
+  { category: 'gk', question: 'What is the capital of Japan?', options: ['Osaka', 'Kyoto', 'Tokyo', 'Seoul'], answer: 2 },
+  { category: 'gk', question: 'How many colors are in a rainbow?', options: ['5', '6', '7', '8'], answer: 2 },
+  { category: 'gk', question: 'Which is the largest animal on Earth?', options: ['African elephant', 'Blue whale', 'Giraffe', 'Great white shark'], answer: 1 },
+  { category: 'gk', question: 'How many minutes are in a full day?', options: ['1200', '1440', '1600', '2400'], answer: 1 },
+  { category: 'gk', question: 'What do bees collect from flowers?', options: ['Pollen and nectar', 'Water only', 'Leaves', 'Seeds'], answer: 0 },
+  { category: 'gk', question: 'Which language has the most native speakers?', options: ['English', 'Spanish', 'Mandarin Chinese', 'Hindi'], answer: 2 },
+  { category: 'gk', question: 'Which metal is liquid at room temperature?', options: ['Mercury', 'Lead', 'Tin', 'Zinc'], answer: 0 },
+  { category: 'gk', question: 'How many players are on the field per team in a soccer match?', options: ['9', '10', '11', '12'], answer: 2 },
+  { category: 'gk', question: 'Which blood type is known as the universal donor?', options: ['A', 'B', 'AB', 'O negative'], answer: 3 },
+  { category: 'gk', question: 'What is the national flower of Bangladesh?', options: ['Rose', 'Water lily (Shapla)', 'Sunflower', 'Lotus'], answer: 1 },
 
-  // ---------- বিজ্ঞান ----------
-  { category: 'science', question: 'পানির রাসায়নিক সংকেত কী?', options: ['CO₂', 'H₂O', 'O₂', 'NaCl'], answer: 1 },
-  { category: 'science', question: 'মানবদেহের বৃহত্তম অঙ্গ কোনটি?', options: ['হৃদয়', 'যকৃত', 'ত্বক', 'মস্তিষ্ক'], answer: 2 },
-  { category: 'science', question: 'কোন গ্রহকে "লাল গ্রহ" বলা হয়?', options: ['শুক্র', 'মঙ্গল', 'বৃহস্পতি', 'শনি'], answer: 1 },
-  { category: 'science', question: 'উদ্ভিদ কোন প্রক্রিয়ায় খাদ্য তৈরি করে?', options: ['শ্বসন', 'সালোকসংশ্লেষণ', 'বাষ্পীভবন', 'পরাগায়ন'], answer: 1 },
-  { category: 'science', question: 'সূর্যের আলো পৃথিবীতে পৌঁছাতে প্রায় কত সময় লাগে?', options: ['৮ সেকেন্ড', '৮ মিনিট', '৮ ঘণ্টা', '৮০ মিনিট'], answer: 1 },
-  { category: 'science', question: 'সুস্থ মানবদেহের স্বাভাবিক তাপমাত্রা কত?', options: ['৩৬°C', '৩৭°C', '৩৮°C', '৩৯°C'], answer: 1 },
-  { category: 'science', question: 'পৃথিবীর সবচেয়ে শক্ত প্রাকৃতিক পদার্থ কোনটি?', options: ['লোহা', 'গ্রাফাইট', 'হীরা', 'কোয়ার্টজ'], answer: 2 },
-  { category: 'science', question: 'সমুদ্রপৃষ্ঠে পানি কত ডিগ্রিতে সিদ্ধ হয়?', options: ['৯০°C', '১০০°C', '১১০°C', '১২০°C'], answer: 1 },
-  { category: 'science', question: 'প্রাপ্তবয়স্ক মানবদেহে প্রায় কতটি হাড় থাকে?', options: ['১০৬টি', '২০৬টি', '৩০৬টি', '৪০৬টি'], answer: 1 },
-  { category: 'science', question: 'DNA-এর পূর্ণরূপ কী?', options: ['ডিঅক্সিরাইবোনিউক্লিক অ্যাসিড', 'ডাইনিউক্লিক অ্যাসিড', 'ডিরাইবোনিউক্লিক অ্যাসিড', 'ডাবল নিউক্লিক অ্যাসিড'], answer: 0 },
+  // ---------- Science ----------
+  { category: 'science', question: 'What is the chemical formula of water?', options: ['CO₂', 'H₂O', 'O₂', 'NaCl'], answer: 1 },
+  { category: 'science', question: 'Which is the largest organ of the human body?', options: ['Heart', 'Liver', 'Skin', 'Brain'], answer: 2 },
+  { category: 'science', question: 'Which planet is called the "Red Planet"?', options: ['Venus', 'Mars', 'Jupiter', 'Saturn'], answer: 1 },
+  { category: 'science', question: 'Plants make food through which process?', options: ['Respiration', 'Photosynthesis', 'Evaporation', 'Pollination'], answer: 1 },
+  { category: 'science', question: 'How long does sunlight take to reach Earth?', options: ['8 seconds', '8 minutes', '8 hours', '80 minutes'], answer: 1 },
+  { category: 'science', question: 'What is the normal human body temperature?', options: ['36°C', '37°C', '38°C', '39°C'], answer: 1 },
+  { category: 'science', question: 'What is the hardest natural material on Earth?', options: ['Iron', 'Graphite', 'Diamond', 'Quartz'], answer: 2 },
+  { category: 'science', question: 'At sea level, water boils at what temperature?', options: ['90°C', '100°C', '110°C', '120°C'], answer: 1 },
+  { category: 'science', question: 'How many bones are in an adult human body?', options: ['106', '206', '306', '406'], answer: 1 },
+  { category: 'science', question: 'What does DNA stand for?', options: ['Deoxyribonucleic acid', 'Dinucleic acid', 'Diribonucleic acid', 'Double nucleic acid'], answer: 0 },
 
-  // ---------- ইতিহাস ----------
-  { category: 'history', question: 'পাহাড়পুর বৌদ্ধ বিহার কোন জেলায় অবস্থিত?', options: ['রাজশাহী', 'নওগাঁ', 'দিনাজপুর', 'বগুড়া'], answer: 1 },
-  { category: 'history', question: 'ঐতিহাসিক ষাট গম্বুজ মসজিদ কোথায় অবস্থিত?', options: ['ঢাকায়', 'সোনারগাঁয়ে', 'বাগেরহাটে', 'চট্টগ্রামে'], answer: 2 },
-  { category: 'history', question: 'লালবাগ কেল্লা কোন শহরে অবস্থিত?', options: ['চট্টগ্রাম', 'ঢাকা', 'রাজশাহী', 'খুলনা'], answer: 1 },
-  { category: 'history', question: 'বিখ্যাত পিরামিড কোন দেশে অবস্থিত?', options: ['গ্রিস', 'মিশর', 'ইরাক', 'তুরস্ক'], answer: 1 },
-  { category: 'history', question: 'পলাশির যুদ্ধ কোন সালে হয়েছিল?', options: ['১৭৫৭ সালে', '১৭৬৪ সালে', '১৭৫৫ সালে', '১৭৮০ সালে'], answer: 0 },
-  { category: 'history', question: 'বাংলার শেষ স্বাধীন নবাব কে ছিলেন?', options: ['আলীবর্দী খান', 'সিরাজউদ্দৌলা', 'মীরজাফর', 'শায়েস্তা খান'], answer: 1 },
-  { category: 'history', question: 'তাজমহল কোন দেশে অবস্থিত?', options: ['পাকিস্তান', 'ভারত', 'বাংলাদেশ', 'আফগানিস্তান'], answer: 1 },
-  { category: 'history', question: 'বাংলাদেশের বিজয় দিবস কোনটি?', options: ['২৬ মার্চ', '১৬ ডিসেম্বর', '১৪ ডিসেম্বর', '৭ মার্চ'], answer: 1 },
-  { category: 'history', question: 'প্রথম বিশ্বযুদ্ধ কোন সালে শুরু হয়েছিল?', options: ['১৯১২ সালে', '১৯১৪ সালে', '১৯১৬ সালে', '১৯১৮ সালে'], answer: 1 },
-  { category: 'history', question: 'মহাত্মা গান্ধী কোন দেশের নেতা ছিলেন?', options: ['পাকিস্তান', 'ভারত', 'বাংলাদেশ', 'শ্রীলঙ্কা'], answer: 1 },
+  // ---------- History ----------
+  { category: 'history', question: 'The Great Pyramids are located in which country?', options: ['Greece', 'Egypt', 'Iraq', 'Turkey'], answer: 1 },
+  { category: 'history', question: 'Who was the first President of the United States?', options: ['Thomas Jefferson', 'George Washington', 'Abraham Lincoln', 'John Adams'], answer: 1 },
+  { category: 'history', question: 'The Taj Mahal is located in which country?', options: ['Pakistan', 'India', 'Bangladesh', 'Afghanistan'], answer: 1 },
+  { category: 'history', question: 'In which year did World War I begin?', options: ['1912', '1914', '1916', '1918'], answer: 1 },
+  { category: 'history', question: 'Who was known as the leader of nonviolent Indian independence?', options: ['Nehru', 'Bose', 'Mahatma Gandhi', 'Patel'], answer: 2 },
+  { category: 'history', question: 'In which year did Bangladesh gain independence?', options: ['1947', '1952', '1971', '1974'], answer: 2 },
+  { category: 'history', question: 'The Berlin Wall fell in which year?', options: ['1985', '1989', '1991', '1993'], answer: 1 },
+  { category: 'history', question: 'Who invented the printing press?', options: ['Leonardo da Vinci', 'Johannes Gutenberg', 'Galileo Galilei', 'Isaac Newton'], answer: 1 },
+  { category: 'history', question: 'Which ancient civilization built Machu Picchu?', options: ['Aztec', 'Maya', 'Inca', 'Olmec'], answer: 2 },
+  { category: 'history', question: 'The Sixty Dome Mosque (Shat Gambuj) is located in?', options: ['Dhaka', 'Sonargaon', 'Bagerhat', 'Chattogram'], answer: 2 },
 
-  // ---------- ভূগোল ----------
-  { category: 'geography', question: 'পৃথিবীর বৃহত্তম মহাসাগর কোনটি?', options: ['আটলান্টিক মহাসাগর', 'ভারত মহাসাগর', 'প্রশান্ত মহাসাগর', 'উত্তর মহাসাগর'], answer: 2 },
-  { category: 'geography', question: 'পৃথিবীর সর্বোচ্চ পর্বতশৃঙ্গ কোনটি?', options: ['K2', 'কাঞ্চনজঙ্ঘা', 'মাউন্ট এভারেস্ট', 'মাকালু'], answer: 2 },
-  { category: 'geography', question: 'সুন্দরবন কোন ধরনের বন?', options: ['পাতাঝরা বন', 'ম্যানগ্রোভ বন', 'পাইন বন', 'বাঁশবন'], answer: 1 },
-  { category: 'geography', question: 'পৃথিবীর বৃহত্তম মরুভূমি কোনটি?', options: ['গবি', 'থার', 'সাহারা', 'কালাহারি'], answer: 2 },
-  { category: 'geography', question: 'কোন মহাদেশকে "কালো মহাদেশ" বলা হয়?', options: ['এশিয়া', 'আফ্রিকা', 'অস্ট্রেলিয়া', 'দক্ষিণ আমেরিকা'], answer: 1 },
-  { category: 'geography', question: 'বাংলাদেশের বৃহত্তম দ্বীপ কোনটি?', options: ['সেন্ট মার্টিন', 'ভোলা', 'হাতিয়া', 'সন্দ্বীপ'], answer: 1 },
-  { category: 'geography', question: 'পৃথিবীপৃষ্ঠের প্রায় কত শতাংশ পানি?', options: ['৫১%', '৬১%', '৭১%', '৮১%'], answer: 2 },
-  { category: 'geography', question: 'বাংলাদেশের বৃহত্তম হ্রদ কোনটি?', options: ['চলন বিল', 'কাপ্তাই হ্রদ', 'হাকালুকি হাওর', 'টাঙ্গুয়ার হাওর'], answer: 1 },
-  { category: 'geography', question: 'পৃথিবীর বৃহত্তম দ্বীপ কোনটি?', options: ['মাদাগাস্কার', 'বোর্নিও', 'গ্রিনল্যান্ড', 'সুমাত্রা'], answer: 2 },
-  { category: 'geography', question: 'কক্সবাজার সমুদ্রসৈকত প্রায় কত দীর্ঘ?', options: ['৬০ কিলোমিটার', '৯০ কিলোমিটার', '১২০ কিলোমিটার', '২০০ কিলোমিটার'], answer: 2 },
+  // ---------- Geography ----------
+  { category: 'geography', question: 'Which is the largest ocean on Earth?', options: ['Atlantic Ocean', 'Indian Ocean', 'Pacific Ocean', 'Arctic Ocean'], answer: 2 },
+  { category: 'geography', question: 'Which is the highest mountain peak in the world?', options: ['K2', 'Kangchenjunga', 'Mount Everest', 'Makalu'], answer: 2 },
+  { category: 'geography', question: 'What type of forest is the Sundarbans?', options: ['Deciduous forest', 'Mangrove forest', 'Pine forest', 'Bamboo forest'], answer: 1 },
+  { category: 'geography', question: 'Which is the largest desert in the world?', options: ['Gobi', 'Thar', 'Sahara', 'Kalahari'], answer: 2 },
+  { category: 'geography', question: 'Which continent is called the "Dark Continent"?', options: ['Asia', 'Africa', 'Australia', 'South America'], answer: 1 },
+  { category: 'geography', question: 'What percentage of the Earth\'s surface is water?', options: ['51%', '61%', '71%', '81%'], answer: 2 },
+  { category: 'geography', question: 'Which is the largest island in the world?', options: ['Madagascar', 'Borneo', 'Greenland', 'Sumatra'], answer: 2 },
+  { category: 'geography', question: 'Which is the longest river in the world?', options: ['Amazon', 'Nile', 'Yangtze', 'Ganges'], answer: 1 },
+  { category: 'geography', question: 'Cox\'s Bazar sea beach is famous for being?', options: ['The deepest sea point', 'The longest natural sea beach', 'A coral island', 'A volcano site'], answer: 1 },
+  { category: 'geography', question: 'Which country has the most time zones?', options: ['USA', 'Russia', 'China', 'France'], answer: 3 },
 
-  // ---------- খেলাধুলা ----------
-  { category: 'sports', question: 'ক্রিকেটে এক ওভারে কত বল করা হয়?', options: ['৪ বল', '৫ বল', '৬ বল', '৮ বল'], answer: 2 },
-  { category: 'sports', question: 'বাংলাদেশের জাতীয় খেলা কোনটি?', options: ['ফুটবল', 'ক্রিকেট', 'কাবাডি', 'হকি'], answer: 2 },
-  { category: 'sports', question: 'বাংলাদেশ কত সালে টেস্ট স্ট্যাটাস পায়?', options: ['১৯৯৭ সালে', '১৯৯৯ সালে', '২০০০ সালে', '২০০২ সালে'], answer: 2 },
-  { category: 'sports', question: 'ফিফা বিশ্বকাপ কত বছর পর পর হয়?', options: ['২ বছর', '৩ বছর', '৪ বছর', '৫ বছর'], answer: 2 },
-  { category: 'sports', question: 'ফুটবল ম্যাচে মাঠে একটি দলের কতজন খেলোয়াড় থাকে?', options: ['৯ জন', '১০ জন', '১১ জন', '১২ জন'], answer: 2 },
-  { category: 'sports', question: '২০২২ ফিফা বিশ্বকাপ কোন দেশে হয়েছিল?', options: ['রাশিয়া', 'কাতার', 'ব্রাজিল', 'ফ্রান্স'], answer: 1 },
-  { category: 'sports', question: 'উইম্বলডন টেনিস টুর্নামেন্ট কোন দেশে হয়?', options: ['আমেরিকা', 'ফ্রান্স', 'ইংল্যান্ড', 'অস্ট্রেলিয়া'], answer: 2 },
-  { category: 'sports', question: '"দ্য গ্রেটেস্ট" খ্যাত কিংবদন্তি বক্সার কে?', options: ['মাইক টাইসন', 'মোহাম্মদ আলী', 'ফ্লয়েড মেওয়েদার', 'ম্যানি প্যাকিয়াও'], answer: 1 },
-  { category: 'sports', question: 'বাংলাদেশ কোন সালে প্রথম বিশ্বকাপ ক্রিকেট খেলে?', options: ['১৯৯৬ সালে', '১৯৯৯ সালে', '২০০৩ সালে', '২০০৭ সালে'], answer: 1 },
-  { category: 'sports', question: 'ব্যাডমিন্টনে বর্তমান নিয়মে এক গেম জেততে কত পয়েন্ট লাগে?', options: ['১৫ পয়েন্ট', '২১ পয়েন্ট', '২৫ পয়েন্ট', '৩০ পয়েন্ট'], answer: 1 },
+  // ---------- Sports ----------
+  { category: 'sports', question: 'How many balls are in one over in cricket?', options: ['4', '5', '6', '8'], answer: 2 },
+  { category: 'sports', question: 'What is the national sport of Bangladesh?', options: ['Football', 'Cricket', 'Kabaddi', 'Hockey'], answer: 2 },
+  { category: 'sports', question: 'How often is the FIFA World Cup held?', options: ['Every 2 years', 'Every 3 years', 'Every 4 years', 'Every 5 years'], answer: 2 },
+  { category: 'sports', question: 'Which country hosted the 2022 FIFA World Cup?', options: ['Russia', 'Qatar', 'Brazil', 'France'], answer: 1 },
+  { category: 'sports', question: 'Wimbledon is a famous tournament of which sport?', options: ['Golf', 'Cricket', 'Tennis', 'Badminton'], answer: 2 },
+  { category: 'sports', question: 'Which boxer was known as "The Greatest"?', options: ['Mike Tyson', 'Muhammad Ali', 'Floyd Mayweather', 'Manny Pacquiao'], answer: 1 },
+  { category: 'sports', question: 'How many points win a badminton game (current rules)?', options: ['15', '21', '25', '30'], answer: 1 },
+  { category: 'sports', question: 'In which year did Bangladesh get Test cricket status?', options: ['1997', '1999', '2000', '2002'], answer: 2 },
+  { category: 'sports', question: 'How many rings are on the Olympic flag?', options: ['4', '5', '6', '7'], answer: 1 },
+  { category: 'sports', question: 'Usain Bolt is a legend of which sport?', options: ['Swimming', 'Sprinting', 'Long jump', 'Cycling'], answer: 1 },
 
-  // ---------- প্রযুক্তি ----------
-  { category: 'tech', question: 'কম্পিউটারের "মস্তিষ্ক" বলা হয় কাকে?', options: ['RAM', 'CPU', 'HDD', 'GPU'], answer: 1 },
-  { category: 'tech', question: 'WWW-এর পূর্ণরূপ কী?', options: ['World Wide Web', 'World Web Wide', 'Wide World Web', 'Web World Wide'], answer: 0 },
-  { category: 'tech', question: 'Android অপারেটিং সিস্টেম কোন কোম্পানির?', options: ['Apple', 'Microsoft', 'Google', 'Samsung'], answer: 2 },
-  { category: 'tech', question: 'RAM কী ধরনের মেমরি?', options: ['স্থায়ী মেমরি', 'অস্থায়ী মেমরি', 'চৌম্বকীয় মেমরি', 'অপটিক্যাল মেমরি'], answer: 1 },
-  { category: 'tech', question: '১ কিলোবাইট (KB) = কত বাইট?', options: ['১০০ বাইট', '৫১২ বাইট', '১০২৪ বাইট', '২০৪৮ বাইট'], answer: 2 },
-  { category: 'tech', question: 'নিচের কোনটি সার্চ ইঞ্জিন?', options: ['Facebook', 'Google', 'WhatsApp', 'Instagram'], answer: 1 },
-  { category: 'tech', question: 'বাংলাদেশের প্রথম যোগাযোগ স্যাটেলাইটের নাম কী?', options: ['বঙ্গবন্ধু-১', 'রূপক্ষা-১', 'বাংলা-১', 'একুশ-১'], answer: 0 },
-  { category: 'tech', question: 'HTML কী তৈরিতে ব্যবহৃত হয়?', options: ['ডেস্কটপ সফটওয়্যার', 'ওয়েবপেজ', 'গেম কনসোল', 'প্রিন্টার ড্রাইভার'], answer: 1 },
-  { category: 'tech', question: 'কম্পিউটারের ভাইরাস ধরতে কী ব্যবহার করা হয়?', options: ['ইমেইল', 'অ্যান্টিভাইরাস', 'প্রিন্টার', 'স্ক্যানার'], answer: 1 },
-  { category: 'tech', question: '"কৃত্রিম বুদ্ধিমত্তা"-এর ইংরেজি সংক্ষেপ কী?', options: ['AI', 'AR', 'VR', 'ML'], answer: 0 },
+  // ---------- Technology ----------
+  { category: 'tech', question: 'What is called the "brain" of the computer?', options: ['RAM', 'CPU', 'HDD', 'GPU'], answer: 1 },
+  { category: 'tech', question: 'What does WWW stand for?', options: ['World Wide Web', 'World Web Wide', 'Wide World Web', 'Web World Wide'], answer: 0 },
+  { category: 'tech', question: 'Android OS is developed by which company?', options: ['Apple', 'Microsoft', 'Google', 'Samsung'], answer: 2 },
+  { category: 'tech', question: 'RAM is what type of memory?', options: ['Permanent', 'Temporary (volatile)', 'Magnetic', 'Optical'], answer: 1 },
+  { category: 'tech', question: '1 Kilobyte (KB) equals how many bytes?', options: ['100', '512', '1024', '2048'], answer: 2 },
+  { category: 'tech', question: 'Which of the following is a search engine?', options: ['Facebook', 'Google', 'WhatsApp', 'Instagram'], answer: 1 },
+  { category: 'tech', question: 'HTML is used to create what?', options: ['Desktop software', 'Web pages', 'Game consoles', 'Printer drivers'], answer: 1 },
+  { category: 'tech', question: 'What is the short form of Artificial Intelligence?', options: ['AI', 'AR', 'VR', 'ML'], answer: 0 },
+  { category: 'tech', question: 'What does "HTTP" stand for?', options: ['HyperText Transfer Protocol', 'High Transfer Text Protocol', 'Hyper Transfer Type Protocol', 'Home Text Transfer Protocol'], answer: 0 },
+  { category: 'tech', question: 'Which company created the iPhone?', options: ['Samsung', 'Apple', 'Nokia', 'Sony'], answer: 1 },
 ]
 
-/** একটি ক্যাটাগরি থেকে র‍্যান্ডম ১০টি প্রশ্ন নেওয়া (অপশন শাফলসহ) */
+/** Pick random questions from a category (options are shuffled too). */
 export function pickQuizQuestions(category: QuizCategoryId, count = 10): QuizQuestion[] {
   const pool =
-    category === 'mixed'
-      ? QUIZ_QUESTIONS
-      : QUIZ_QUESTIONS.filter((q) => q.category === category)
+    category === 'mixed' ? QUIZ_QUESTIONS : QUIZ_QUESTIONS.filter((q) => q.category === category)
 
   const shuffled = [...pool].sort(() => Math.random() - 0.5)
   return shuffled.slice(0, Math.min(count, shuffled.length)).map((q) => {
-    // অপশন শাফল + সঠিক উত্তরের ইনডেক্স ট্র্যাক
     const paired = q.options.map((opt, i) => ({ opt, correct: i === q.answer }))
     const shuffledOptions = paired.sort(() => Math.random() - 0.5)
     return {

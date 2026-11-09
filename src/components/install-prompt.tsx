@@ -9,9 +9,7 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
-/**
- * "অ্যাপ ইনস্টল করুন" বাটন — Android Chrome এর beforeinstallprompt ধরে কাজ করে
- */
+/** "Install app" button — hooks into Android Chrome's beforeinstallprompt event. */
 export function InstallPrompt() {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null)
   const [installed, setInstalled] = useState(false)
@@ -43,7 +41,7 @@ export function InstallPrompt() {
       if (choice.outcome === 'accepted') setInstalled(true)
       setDeferred(null)
     } catch {
-      /* ইউজার বাতিল করলে কিছু করার দরকার নেই */
+      /* user dismissed — nothing to do */
     }
   }
 
@@ -51,11 +49,11 @@ export function InstallPrompt() {
     <Button
       onClick={handleInstall}
       size="sm"
-      className="bg-amber-500 text-stone-950 hover:bg-amber-400 font-semibold"
-      aria-label="অ্যাপ ইনস্টল করুন"
+      className="bg-amber-500 font-semibold text-stone-950 hover:bg-amber-400"
+      aria-label="Install app"
     >
       <Download className="h-4 w-4" />
-      <span className="hidden sm:inline">ইনস্টল করুন</span>
+      <span className="hidden sm:inline">Install</span>
     </Button>
   )
 }

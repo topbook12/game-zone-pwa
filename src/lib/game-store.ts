@@ -1,17 +1,9 @@
 /**
- * বাংলা সংখ্যা ও localStorage হেল্পার (React 19 useSyncExternalStore ভিত্তিক)
+ * localStorage helpers for game stats, reactive across components
+ * (React 19 useSyncExternalStore based, hydration safe).
  */
 
 import { useSyncExternalStore } from 'react'
-
-const BN_DIGITS = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯']
-
-/** ইংরেজি সংখ্যা → বাংলা সংখ্যা (123 → ১২৩) */
-export function toBn(value: number | string): string {
-  return String(value).replace(/\d/g, (d) => BN_DIGITS[Number(d)])
-}
-
-/* ---------------- localStorage external store ---------------- */
 
 const storageListeners = new Set<() => void>()
 
@@ -29,7 +21,7 @@ function notifyStorage(): void {
   storageListeners.forEach((listener) => listener())
 }
 
-/** localStorage থেকে সংখ্যা পড়া (না থাকলে fallback) */
+/** Read a number from localStorage (fallback when missing/SSR). */
 export function readStoredNumber(key: string, fallback = 0): number {
   if (typeof window === 'undefined') return fallback
   try {
@@ -41,18 +33,18 @@ export function readStoredNumber(key: string, fallback = 0): number {
   }
 }
 
-/** localStorage-এ সংখ্যা সেভ + সাবস্ক্রাইবারদের নোটিফাই */
+/** Save a number to localStorage and notify subscribers. */
 export function writeStoredNumber(key: string, value: number): void {
   if (typeof window === 'undefined') return
   try {
     window.localStorage.setItem(key, String(value))
     notifyStorage()
   } catch {
-    /* স্টোরেজ ফুল/ব্লকড হলে চুপচাপ পাস */
+    /* storage full/blocked — ignore */
   }
 }
 
-/** কম্পোনেন্টে প্রতিক্রিয়াশীলভাবে সংখ্যা পড়া — SSR-এ fallback ফেরত দেয় (হাইড্রেশন নিরাপদ) */
+/** Reactively read a number inside components (SSR returns fallback). */
 export function useStoredNumber(key: string, fallback = 0): number {
   return useSyncExternalStore(
     subscribeStorage,
@@ -60,3 +52,10 @@ export function useStoredNumber(key: string, fallback = 0): number {
     () => fallback
   )
 }
+
+/** Shared localStorage keys used across games. */
+export const STORAGE_KEYS = {
+  plays: 'gz-plays',
+  racingBest: 'gz-racing-best',
+  quizBest: (category: string) => `gz-quiz-best-${category}`,
+} as const

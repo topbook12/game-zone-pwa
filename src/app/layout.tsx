@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Hind_Siliguri } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { PwaRegister } from "@/components/pwa-register";
@@ -14,18 +14,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const hindSiliguri = Hind_Siliguri({
-  variable: "--font-bengali",
-  subsets: ["bengali"],
-  weight: ["300", "400", "500", "600", "700"],
-});
-
 export const metadata: Metadata = {
-  title: "গেম জোন | বাংলা গেমিং প্ল্যাটফর্ম",
+  title: "Game Zone | Turbo Rush Racing & Quiz",
   description:
-    "অফলাইনেও খেলা যায় এমন বাংলা গেম হাব PWA — টার্বো রেসিং, বাংলা কুইজ আরও অনেক কিছু। Android-এ ইনস্টল করে খেলুন!",
-  keywords: ["গেম", "বাংলা গেম", "PWA", "রেসিং গেম", "কুইজ", "অফলাইন গেম"],
-  applicationName: "গেম জোন",
+    "Offline-ready game hub PWA — Turbo Rush pseudo-3D racing, Brain Quiz and more. Install on Android and play anytime, even without internet!",
+  keywords: ["games", "PWA", "racing game", "quiz", "offline games", "car game"],
+  applicationName: "Game Zone",
   manifest: "/manifest.json",
   icons: {
     icon: [
@@ -37,7 +31,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "গেম জোন",
+    title: "Game Zone",
   },
 };
 
@@ -56,9 +50,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="bn" className="dark" suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${hindSiliguri.variable} antialiased bg-background text-foreground [font-family:var(--font-geist-sans),var(--font-bengali),system-ui,sans-serif]`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground [font-family:var(--font-geist-sans),system-ui,sans-serif]`}
       >
         {children}
         <Toaster />

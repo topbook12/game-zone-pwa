@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { toBn, readStoredNumber, useStoredNumber, writeStoredNumber } from '@/lib/bn'
+import { readStoredNumber, useStoredNumber, writeStoredNumber, STORAGE_KEYS } from '@/lib/game-store'
 import {
   QUIZ_CATEGORIES,
   pickQuizQuestions,
@@ -50,10 +50,10 @@ export function QuizGame({ onExit }: QuizGameProps) {
   const [gained, setGained] = useState(0)
   const [result, setResult] = useState<ResultState | null>(null)
 
-  /** সেরা স্কোর — localStorage store থেকে প্রতিক্রিয়াশীলভাবে (হাইড্রেশন নিরাপদ) */
-  const best = useStoredNumber(`gz-quiz-best-${category}`)
+  /** Best score — reactive localStorage store (hydration safe) */
+  const best = useStoredNumber(STORAGE_KEYS.quizBest(category))
 
-  /* প্রশ্ন শুরু */
+  /* Start quiz */
   const startQuiz = useCallback((cat: QuizCategoryId) => {
     const picked = pickQuizQuestions(cat, 10)
     setQuestions(picked)
@@ -68,7 +68,7 @@ export function QuizGame({ onExit }: QuizGameProps) {
     setPhase('play')
   }, [])
 
-  /* উত্তর নেওয়া */
+  /* Answer */
   const handleAnswer = useCallback(
     (idx: number) => {
       if (answered !== null || questions.length === 0) return
@@ -86,7 +86,7 @@ export function QuizGame({ onExit }: QuizGameProps) {
     [answered, questions, qIndex, timeLeft]
   )
 
-  /* টাইমার (উত্তর দিলে থেমে যায়) — deadline ref এ রাখা, তাই প্রতি টিকে রি-সাবস্ক্রাইব হয় না */
+  /* Timer (stops once answered) — deadline kept in a ref so ticks don't re-subscribe */
   const deadlineRef = useRef(0)
   useEffect(() => {
     if (phase !== 'play' || answered !== null) return
@@ -96,7 +96,7 @@ export function QuizGame({ onExit }: QuizGameProps) {
       if (remain <= 0) {
         setTimeLeft(0)
         setGained(0)
-        setAnswered(-1) // -1 = সময় শেষ
+        setAnswered(-1) // -1 = time up
         clearInterval(id)
       } else {
         setTimeLeft(remain)
@@ -105,17 +105,17 @@ export function QuizGame({ onExit }: QuizGameProps) {
     return () => clearInterval(id)
   }, [phase, answered, qIndex])
 
-  /* উত্তরের পর পরবর্তী প্রশ্ন / ফলাফল */
+  /* Advance to next question / result */
   useEffect(() => {
     if (phase !== 'play' || answered === null) return
     const id = setTimeout(() => {
       if (qIndex + 1 >= questions.length) {
         const total = questions.length
-        const prevBest = readStoredNumber(`gz-quiz-best-${category}`, 0)
+        const bestKey = STORAGE_KEYS.quizBest(category)
+        const prevBest = readStoredNumber(bestKey, 0)
         const isBest = score > prevBest
-        if (isBest) writeStoredNumber(`gz-quiz-best-${category}`, score)
-        // মোট খেলার হিসাব
-        writeStoredNumber('gz-plays', readStoredNumber('gz-plays', 0) + 1)
+        if (isBest) writeStoredNumber(bestKey, score)
+        writeStoredNumber(STORAGE_KEYS.plays, readStoredNumber(STORAGE_KEYS.plays, 0) + 1)
         setResult({ score, correct: correctCount, total, isBest })
         setPhase('result')
       } else {
@@ -131,7 +131,7 @@ export function QuizGame({ onExit }: QuizGameProps) {
   const current = questions[qIndex]
   const timePct = Math.max(0, (timeLeft / QUESTION_TIME) * 100)
 
-  /* ---------------- ক্যাটাগরি সিলেক্ট ---------------- */
+  /* ---------------- category select ---------------- */
   if (phase === 'select') {
     return (
       <div className="flex flex-col gap-4">
@@ -143,18 +143,18 @@ export function QuizGame({ onExit }: QuizGameProps) {
             className="border-zinc-700 bg-zinc-900/80 text-zinc-200 hover:bg-zinc-800 hover:text-amber-300"
           >
             <ChevronLeft className="h-4 w-4" />
-            হাবে ফিরুন
+            Back to hub
           </Button>
           <div className="flex items-center gap-1.5 text-sm text-zinc-400">
             <Brain className="h-4 w-4 text-amber-400" />
-            প্রশ্নব্যাংক: <span className="font-semibold text-amber-300">৬০+</span>
+            Question bank: <span className="font-semibold text-amber-300">60+</span>
           </div>
         </div>
 
         <div className="text-center">
-          <h2 className="text-2xl font-extrabold text-amber-300">🧠 বাংলা কুইজ</h2>
+          <h2 className="text-2xl font-extrabold text-amber-300">🧠 Brain Quiz</h2>
           <p className="mt-1 text-sm text-zinc-400">
-            ক্যাটাগরি বেছে নিন — প্রতি প্রশ্নে ১৫ সেকেন্ড, তাড়াতাড়ি উত্তরে বোনাস!
+            Pick a category — 15 seconds per question, faster answers earn bonus points!
           </p>
         </div>
 
@@ -164,15 +164,13 @@ export function QuizGame({ onExit }: QuizGameProps) {
               key={cat.id}
               onClick={() => startQuiz(cat.id)}
               className={`group flex flex-col items-center gap-1 rounded-2xl border-2 bg-zinc-900/80 p-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:bg-zinc-800/90 active:scale-[0.98] ${cat.accent}`}
-              aria-label={`${cat.name} কুইজ খেলুন`}
+              aria-label={`Play ${cat.name} quiz`}
             >
               <span className="text-3xl transition-transform duration-200 group-hover:scale-110">
                 {cat.emoji}
               </span>
               <span className="text-sm font-bold text-zinc-100">{cat.name}</span>
-              <span className="text-[11px] leading-tight text-zinc-400">
-                {cat.description}
-              </span>
+              <span className="text-[11px] leading-tight text-zinc-400">{cat.description}</span>
               <BestScoreBadge catId={cat.id} />
             </button>
           ))}
@@ -181,17 +179,17 @@ export function QuizGame({ onExit }: QuizGameProps) {
     )
   }
 
-  /* ---------------- ফলাফল ---------------- */
+  /* ---------------- result ---------------- */
   if (phase === 'result' && result) {
     const accuracy = Math.round((result.correct / result.total) * 100)
     const msg =
       accuracy >= 90
-        ? 'অসাধারণ! আপনি তো জিনিয়স! 🌟'
+        ? 'Outstanding! You are a genius! 🌟'
         : accuracy >= 70
-          ? 'দুর্দান্ত! খুব ভালো করেছেন! 🎉'
+          ? 'Excellent! Very well played! 🎉'
           : accuracy >= 50
-            ? 'ভালো! আরেকটু চেষ্টা করলেই সেরা হবেন! 💪'
-            : 'চিন্তা নেই, অনুশীলন করলেই উন্নতি হবে! 📚'
+            ? 'Good! A little more practice and you will be the best! 💪'
+            : 'No worries, practice makes perfect! 📚'
 
     return (
       <div className="flex flex-col items-center gap-5 py-4 text-center">
@@ -201,13 +199,13 @@ export function QuizGame({ onExit }: QuizGameProps) {
           </div>
         </div>
         <div>
-          <h2 className="text-2xl font-extrabold text-zinc-100">কুইজ শেষ!</h2>
+          <h2 className="text-2xl font-extrabold text-zinc-100">Quiz complete!</h2>
           <p className="mt-1 text-sm text-zinc-400">{msg}</p>
         </div>
 
         {result.isBest && (
           <div className="rounded-full border border-amber-400/50 bg-amber-500/15 px-4 py-1.5 text-sm font-semibold text-amber-300">
-            🎊 নতুন রেকর্ড!
+            🎊 New record!
           </div>
         )}
 
@@ -215,35 +213,31 @@ export function QuizGame({ onExit }: QuizGameProps) {
           <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/70 p-4">
             <div className="flex items-center justify-center gap-1 text-[11px] text-zinc-400">
               <Star className="h-3 w-3 text-amber-400" />
-              স্কোর
+              Score
             </div>
-            <div className="mt-1 text-2xl font-bold text-amber-300">
-              {toBn(result.score)}
-            </div>
+            <div className="mt-1 text-2xl font-bold text-amber-300">{result.score}</div>
           </div>
           <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/70 p-4">
             <div className="flex items-center justify-center gap-1 text-[11px] text-zinc-400">
               <CheckCircle2 className="h-3 w-3 text-emerald-400" />
-              সঠিক
+              Correct
             </div>
             <div className="mt-1 text-2xl font-bold text-emerald-300">
-              {toBn(result.correct)}/{toBn(result.total)}
+              {result.correct}/{result.total}
             </div>
           </div>
           <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/70 p-4">
             <div className="flex items-center justify-center gap-1 text-[11px] text-zinc-400">
               <Target className="h-3 w-3 text-teal-400" />
-              নির্ভুলতা
+              Accuracy
             </div>
-            <div className="mt-1 text-2xl font-bold text-teal-300">
-              {toBn(accuracy)}%
-            </div>
+            <div className="mt-1 text-2xl font-bold text-teal-300">{accuracy}%</div>
           </div>
         </div>
 
         <p className="text-sm text-zinc-500">
-          সেরা স্কোর (এই ক্যাটাগরি):{' '}
-          <span className="font-semibold text-amber-300">{toBn(Math.max(best, result.score))}</span>
+          Best score (this category):{' '}
+          <span className="font-semibold text-amber-300">{Math.max(best, result.score)}</span>
         </p>
 
         <div className="flex flex-wrap justify-center gap-2">
@@ -252,7 +246,7 @@ export function QuizGame({ onExit }: QuizGameProps) {
             className="bg-amber-500 font-bold text-stone-950 hover:bg-amber-400"
           >
             <RotateCcw className="h-4 w-4" />
-            আবার খেলুন
+            Play again
           </Button>
           <Button
             onClick={() => setPhase('select')}
@@ -260,7 +254,7 @@ export function QuizGame({ onExit }: QuizGameProps) {
             className="border-zinc-600 bg-zinc-900 text-zinc-200 hover:bg-zinc-800"
           >
             <ListChecks className="h-4 w-4" />
-            ক্যাটাগরি বদলান
+            Change category
           </Button>
           <Button
             onClick={onExit}
@@ -268,30 +262,33 @@ export function QuizGame({ onExit }: QuizGameProps) {
             className="border-zinc-600 bg-zinc-900 text-zinc-200 hover:bg-zinc-800"
           >
             <ChevronLeft className="h-4 w-4" />
-            হাবে ফিরুন
+            Back to hub
           </Button>
         </div>
       </div>
     )
   }
 
-  /* ---------------- খেলা চলছে ---------------- */
+  /* ---------------- playing ---------------- */
   if (!current) return null
 
   const catInfo = QUIZ_CATEGORIES.find((c) => c.id === current.category)
 
   return (
     <div className="mx-auto flex w-full max-w-[560px] flex-col gap-4">
-      {/* প্রগ্রেস বার */}
+      {/* progress */}
       <div className="flex items-center justify-between text-sm">
         <span className="font-semibold text-zinc-300">
-          প্রশ্ন {toBn(qIndex + 1)}/{toBn(questions.length)}
+          Question {qIndex + 1}/{questions.length}
         </span>
-        <span className="font-semibold text-amber-300">স্কোর: {toBn(score)}</span>
+        <span className="font-semibold text-amber-300">Score: {score}</span>
       </div>
-      <Progress value={((qIndex + (answered !== null ? 1 : 0)) / questions.length) * 100} className="h-1.5 bg-zinc-800" />
+      <Progress
+        value={((qIndex + (answered !== null ? 1 : 0)) / questions.length) * 100}
+        className="h-1.5 bg-zinc-800"
+      />
 
-      {/* টাইমার */}
+      {/* timer */}
       <div className="flex items-center gap-3">
         <Timer
           className={`h-5 w-5 shrink-0 ${timeLeft <= 5 ? 'animate-pulse text-red-400' : 'text-emerald-400'}`}
@@ -308,11 +305,11 @@ export function QuizGame({ onExit }: QuizGameProps) {
             timeLeft <= 5 ? 'text-red-400' : 'text-zinc-300'
           }`}
         >
-          {toBn(Math.ceil(timeLeft))} সে
+          {Math.ceil(timeLeft)}s
         </span>
       </div>
 
-      {/* প্রশ্ন কার্ড */}
+      {/* question card */}
       <div className="rounded-2xl border border-zinc-700/70 bg-zinc-900/90 p-5 shadow-xl">
         {catInfo && (
           <div className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-zinc-800 px-3 py-1 text-xs text-zinc-300">
@@ -325,7 +322,7 @@ export function QuizGame({ onExit }: QuizGameProps) {
         </h2>
       </div>
 
-      {/* অপশন */}
+      {/* options */}
       <div className="grid gap-2.5">
         {current.options.map((opt, idx) => {
           const isCorrect = idx === current.answer
@@ -333,12 +330,10 @@ export function QuizGame({ onExit }: QuizGameProps) {
           const showCorrect = answered !== null && isCorrect
           const showWrong = answered !== null && isPicked && !isCorrect
 
-          let cls =
-            'border-zinc-700 bg-zinc-900/80 text-zinc-100 hover:border-amber-500/60 hover:bg-zinc-800'
+          let cls = 'border-zinc-700 bg-zinc-900/80 text-zinc-100 hover:border-amber-500/60 hover:bg-zinc-800'
           if (showCorrect) cls = 'border-emerald-500 bg-emerald-600 text-white'
           else if (showWrong) cls = 'border-red-500 bg-red-600/90 text-white'
-          else if (answered !== null)
-            cls = 'border-zinc-800 bg-zinc-900/60 text-zinc-500'
+          else if (answered !== null) cls = 'border-zinc-800 bg-zinc-900/60 text-zinc-500'
 
           return (
             <button
@@ -346,11 +341,11 @@ export function QuizGame({ onExit }: QuizGameProps) {
               onClick={() => handleAnswer(idx)}
               disabled={answered !== null}
               className={`flex items-center justify-between gap-3 rounded-xl border-2 px-4 py-3.5 text-left text-sm font-semibold transition-all duration-150 active:scale-[0.98] disabled:cursor-default sm:text-base ${cls}`}
-              aria-label={`উত্তর ${toBn(idx + 1)}: ${opt}`}
+              aria-label={`Answer ${idx + 1}: ${opt}`}
             >
               <span className="flex items-center gap-3">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-zinc-500/40 text-xs opacity-80">
-                  {['ক', 'খ', 'গ', 'ঘ'][idx]}
+                  {['A', 'B', 'C', 'D'][idx]}
                 </span>
                 {opt}
               </span>
@@ -361,7 +356,7 @@ export function QuizGame({ onExit }: QuizGameProps) {
         })}
       </div>
 
-      {/* ফিডব্যাক */}
+      {/* feedback */}
       {answered !== null && (
         <div
           className={`rounded-xl border px-4 py-3 text-center text-sm font-semibold ${
@@ -373,22 +368,22 @@ export function QuizGame({ onExit }: QuizGameProps) {
           }`}
         >
           {answered === current.answer
-            ? `✅ সঠিক! +${toBn(gained)} পয়েন্ট`
+            ? `✅ Correct! +${gained} points`
             : answered === -1
-              ? `⏰ সময় শেষ! সঠিক উত্তর: ${current.options[current.answer]}`
-              : `❌ ভুল হয়েছে! সঠিক উত্তর: ${current.options[current.answer]}`}
+              ? `⏰ Time is up! Correct answer: ${current.options[current.answer]}`
+              : `❌ Wrong! Correct answer: ${current.options[current.answer]}`}
         </div>
       )}
     </div>
   )
 }
 
-/** ক্যাটাগরি কার্ডের সেরা স্কোর ব্যাজ — আলাদা কম্পোনেন্ট, তাই map-এর ভেতরেও hooks-safe */
+/** Best-score badge for a category card — separate component so map stays hooks-safe */
 function BestScoreBadge({ catId }: { catId: QuizCategoryId }) {
-  const best = useStoredNumber(`gz-quiz-best-${catId}`)
+  const best = useStoredNumber(STORAGE_KEYS.quizBest(catId))
   return (
     <span className="mt-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] text-amber-300">
-      সেরা: {toBn(best)}
+      Best: {best}
     </span>
   )
 }
