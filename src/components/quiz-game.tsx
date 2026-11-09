@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { readStoredNumber, useStoredNumber, writeStoredNumber, STORAGE_KEYS } from '@/lib/game-store'
+import { submitScore, type SubmitOutcome } from '@/lib/leaderboard'
 import {
   QUIZ_CATEGORIES,
   pickQuizQuestions,
@@ -49,6 +50,7 @@ export function QuizGame({ onExit }: QuizGameProps) {
   const [timeLeft, setTimeLeft] = useState(QUESTION_TIME)
   const [gained, setGained] = useState(0)
   const [result, setResult] = useState<ResultState | null>(null)
+  const [sync, setSync] = useState<SubmitOutcome | null>(null)
 
   /** Best score — reactive localStorage store (hydration safe) */
   const best = useStoredNumber(STORAGE_KEYS.quizBest(category))
@@ -117,6 +119,10 @@ export function QuizGame({ onExit }: QuizGameProps) {
         if (isBest) writeStoredNumber(bestKey, score)
         writeStoredNumber(STORAGE_KEYS.plays, readStoredNumber(STORAGE_KEYS.plays, 0) + 1)
         setResult({ score, correct: correctCount, total, isBest })
+        setSync(null)
+        submitScore('quiz', score)
+          .then(setSync)
+          .catch(() => setSync({ status: 'queued' }))
         setPhase('result')
       } else {
         setQIndex((i) => i + 1)
@@ -239,6 +245,20 @@ export function QuizGame({ onExit }: QuizGameProps) {
           Best score (this category):{' '}
           <span className="font-semibold text-amber-300">{Math.max(best, result.score)}</span>
         </p>
+
+        <div className="h-5 text-xs font-semibold">
+          {sync?.status === 'synced' && (
+            <span className="text-emerald-400">
+              ☁ Synced to global leaderboard{typeof sync.rank === 'number' ? ` — rank #${sync.rank}` : ''}
+            </span>
+          )}
+          {sync?.status === 'queued' && (
+            <span className="text-amber-300">⏳ Saved — will sync when back online</span>
+          )}
+          {sync?.status === 'offline' && (
+            <span className="text-amber-300">📴 Offline — score will sync automatically</span>
+          )}
+        </div>
 
         <div className="flex flex-wrap justify-center gap-2">
           <Button

@@ -1,5 +1,5 @@
 /* Game Zone — Service Worker (PWA offline support) */
-const CACHE_NAME = 'game-zone-v4';
+const CACHE_NAME = 'game-zone-v5';
 const CORE_ASSETS = [
   '/',
   '/manifest.json',
@@ -33,13 +33,21 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch: navigation = network-first, static = cache-first
+// Fetch strategy:
+//  - navigation  → network-first (fresh page), fallback to cached shell offline
+//  - /api/scores → network-first, fallback to last cached leaderboard offline
+//  - static      → cache-first (immutable assets = zero repeat data usage)
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+
+  // Never touch dev hot-reload
+  if (url.pathname.includes('webpack-hmr') || url.pathname.includes('_rsc')) {
+    return;
+  }
 
   // Page navigation: network first, fall back to cache when offline
   if (request.mode === 'navigate') {
@@ -52,6 +60,31 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() =>
           caches.match(request).then((cached) => cached || caches.match('/'))
+        )
+    );
+    return;
+  }
+
+  // API: network first with cache fallback (leaderboard still visible offline)
+  if (url.pathname.startsWith('/api/')) {
+    event.respondWith(
+      fetch(request)
+        .then((res) => {
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          }
+          return res;
+        })
+        .catch(
+          () =>
+            caches.match(request).then(
+              (cached) =>
+                cached ||
+                new Response(JSON.stringify({ offline: true, scores: [] }), {
+                  headers: { 'Content-Type': 'application/json' },
+                })
+            )
         )
     );
     return;

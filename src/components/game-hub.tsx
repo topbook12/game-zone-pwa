@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { InstallPrompt } from '@/components/install-prompt'
+import { Leaderboard } from '@/components/leaderboard'
 import { RacingGame } from '@/components/racing-game'
 import { QuizGame } from '@/components/quiz-game'
 import { useStoredNumber } from '@/lib/game-store'
@@ -42,6 +43,7 @@ const COMING_SOON = [
 
 export function GameHub() {
   const [view, setView] = useState<View>('hub')
+  const [boardOpen, setBoardOpen] = useState(false)
 
   /** Reads localStorage reactively — updates instantly when a game finishes */
   const plays = useStoredNumber('gz-plays')
@@ -88,7 +90,19 @@ export function GameHub() {
               <p className="text-[11px] leading-tight text-zinc-400">Play. Win. Repeat.</p>
             </div>
           </div>
-          <InstallPrompt />
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setBoardOpen(true)}
+              className="border-zinc-700 bg-zinc-900 text-amber-300 hover:bg-zinc-800 hover:text-amber-200"
+              aria-label="Open global leaderboard"
+            >
+              <Trophy className="h-4 w-4" />
+              <span className="hidden sm:inline">Leaderboard</span>
+            </Button>
+            <InstallPrompt />
+          </div>
         </div>
       </header>
 
@@ -289,10 +303,13 @@ export function GameHub() {
         {view === 'racing' && <RacingGame onExit={() => setView('hub')} />}
       </main>
 
+      {/* Global leaderboard dialog */}
+      <Leaderboard open={boardOpen} onOpenChange={setBoardOpen} />
+
       {/* Sticky footer */}
       <footer className="mt-auto border-t border-zinc-800/80 bg-stone-950/95">
         <div className="mx-auto flex w-full max-w-3xl flex-col items-center justify-between gap-1 px-4 py-3 text-center sm:flex-row sm:text-left">
-          <p className="text-xs text-zinc-500">Game Zone © 2025 • Version 1.1</p>
+          <p className="text-xs text-zinc-500">Game Zone © 2025 • Version 1.2</p>
           <div className="flex items-center gap-1.5 text-xs text-zinc-500">
             <WifiOff className="h-3.5 w-3.5 text-teal-500" />
             Offline-ready PWA

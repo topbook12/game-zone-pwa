@@ -23,6 +23,7 @@ import { RacingEngine } from '@/lib/racing/engine'
 import { SoundEngine } from '@/lib/racing/audio'
 import type { GameEvent, GamePhase, GameResult, HudData } from '@/lib/racing/types'
 import { readStoredNumber, writeStoredNumber, useStoredNumber, STORAGE_KEYS } from '@/lib/game-store'
+import { submitScore, type SubmitOutcome } from '@/lib/leaderboard'
 
 const RING_R = 42
 const RING_C = 2 * Math.PI * RING_R
@@ -62,6 +63,7 @@ export function RacingGame({ onExit }: RacingGameProps) {
   const [toast, setToast] = useState<string | null>(null)
   const [toastKey, setToastKey] = useState(0)
   const [result, setResult] = useState<ResultState | null>(null)
+  const [sync, setSync] = useState<SubmitOutcome | null>(null)
   const [muted, setMuted] = useState(false)
   const [userTouched, setUserTouched] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
@@ -137,6 +139,10 @@ export function RacingGame({ onExit }: RacingGameProps) {
       if (isBest) writeStoredNumber(STORAGE_KEYS.racingBest, ev.result.score)
       writeStoredNumber(STORAGE_KEYS.plays, readStoredNumber(STORAGE_KEYS.plays, 0) + 1)
       setResult({ ...ev.result, isBest })
+      setSync(null)
+      submitScore('racing', ev.result.score)
+        .then(setSync)
+        .catch(() => setSync({ status: 'queued' }))
     } else if (ev.type === 'crash') {
       if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(60)
     }
@@ -699,6 +705,21 @@ export function RacingGame({ onExit }: RacingGameProps) {
                     <div className="text-sm font-black text-white">{Math.round(result.topSpeedKmh)}</div>
                   </div>
                 </div>
+              </div>
+
+              {/* Global sync status */}
+              <div className="h-5 text-[11px] font-semibold tracking-wide">
+                {sync?.status === 'synced' && (
+                  <span className="text-emerald-400">
+                    ☁ Synced to global leaderboard{typeof sync.rank === 'number' ? ` — rank #${sync.rank}` : ''}
+                  </span>
+                )}
+                {sync?.status === 'queued' && (
+                  <span className="text-amber-300">⏳ Saved — will sync when back online</span>
+                )}
+                {sync?.status === 'offline' && (
+                  <span className="text-amber-300">📴 Offline — score will sync automatically</span>
+                )}
               </div>
 
               <div className="flex w-full flex-col gap-2">
