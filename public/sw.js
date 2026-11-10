@@ -1,5 +1,5 @@
-/* Game Zone — Service Worker (PWA offline support) */
-const CACHE_NAME = 'game-zone-v7';
+/* Game Zone — Service Worker (PWA offline support + Web Push) */
+const CACHE_NAME = 'game-zone-v8';
 const CORE_ASSETS = [
   '/',
   '/manifest.json',
@@ -117,5 +117,42 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => cached);
     })
+  );
+});
+
+// ---------------- Web Push (daily challenge reminder) ----------------
+
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (e) {
+    data = { body: event.data ? event.data.text() : '' };
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title || '🎮 Game Zone', {
+      body: data.body || 'Daily challenge is ready!',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/favicon-64.png',
+      tag: 'gz-daily',
+      renotify: true,
+      vibrate: [80, 40, 80],
+      data: { url: data.url || '/' },
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || '/';
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((list) => {
+        for (const client of list) {
+          if ('focus' in client) return client.focus();
+        }
+        return self.clients.openWindow(url);
+      })
   );
 });

@@ -11,6 +11,15 @@ scores are saved on-device, and a tiny global leaderboard syncs through a server
 racing premium visuals (procedural tracks, skyline/stars/birds, headlight cone, tail lights, nitro tint) ·
 EN/বাংলা toggle · offline score queue · SW update card · compressed assets (icon-512 250→66 KB, banners < 55 KB).
 
+**v2.1 highlights (Day 26–45, Phase 3 — social & competition):**
+- 🏆 **Weekly tournaments** — every game has a "This week" leaderboard that resets Monday 00:00 UTC; the weekly #1 gets a 👑 crown and a *Weekly champion* badge
+- 👤 **Player profile card** — emoji avatar picker (16 options), plays / badges / weekly-win stats, personal bests, all stored on-device
+- 📤 **Share button** — every game-over screen and the profile share via the Web Share API ("I scored X, can you beat me? 🎮"), clipboard fallback on desktop
+- 🔗 **Referral deep links** — profile shows your personal `?ref=code` invite link; friends who open it are counted (one per device, edge-cached counter)
+- 🔔 **Daily reminder (Web Push)** — opt-in button on the Daily Challenge card; free VAPID push sent daily at ~7 PM local time via Vercel cron
+- 🛡 **Anti-cheat pass #1** — server-side plausibility caps per game + per-device play-speed floor on live submissions (offline-flushed scores are never punished)
+- Full EN/বাংলা for every new string · SW v8 with push + notification-click handling
+
 ---
 
 ## 🚀 Deploy to Vercel (5 minutes, free)
@@ -19,12 +28,16 @@ EN/বাংলা toggle · offline score queue · SW update card · compressed
    - Go to [vercel.com/new](https://vercel.com/new) → sign in with GitHub → pick this repo.
    - Framework preset: **Next.js** (auto-detected). Build command and output are auto — no changes needed.
 
-2. **Add 2 environment variables** (Project → Settings → Environment Variables):
+2. **Add environment variables** (Project → Settings → Environment Variables):
 
    | Name | Value |
    |---|---|
    | `TURSO_DATABASE_URL` | `libsql://game-topu11111.aws-ap-south-1.turso.io` |
    | `TURSO_AUTH_TOKEN` | *(the Turso token you created — keep it secret)* |
+   | `VAPID_PUBLIC_KEY` | *(public key from `bunx web-push generate-vapid-keys` — one pair works for dev + prod)* |
+   | `VAPID_PRIVATE_KEY` | *(matching private key — keep it secret)* |
+   | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | *(same public key — needed by the browser to subscribe)* |
+   | `CRON_SECRET` | *(any random string — protects the daily push cron endpoint)* |
 
 3. **(Recommended) Set function region** — Project → Settings → Functions → Region: **Mumbai (bom1)**.
    Your Turso DB lives in `aws-ap-south-1` (Mumbai), so this gives the lowest latency for
@@ -32,7 +45,8 @@ EN/বাংলা toggle · offline score queue · SW update card · compressed
 
 4. Click **Deploy**. Done — your PWA is live at `https://your-app.vercel.app`.
 
-> The database tables are already created. If you ever use a **new** Turso database, run `bun run db:init` locally once (with the same env vars in `.env.local`).
+> The database tables are already created. If you ever use a **new** Turso database, run `bun run db:init` locally once (with the same env vars in `.env.local`) — it creates the `scores`, `referrals` and `push_subs` tables.
+> The daily push cron is registered in `vercel.json` (once a day, 13:00 UTC) — Vercel Hobby includes it free.
 
 ### Manual test after deploy (Android)
 
@@ -69,12 +83,18 @@ When ads/coins arrive (see ROADMAP), add tables — no infrastructure change nee
 src/
   app/
     page.tsx              # Entry → <GameHub/>
-    api/scores/route.ts   # The ONLY API: leaderboard GET/POST
+    api/scores/route.ts   # Leaderboard GET (weekly/all) + POST with anti-cheat
+    api/referral/route.ts # ?ref= invite counter (POST once/device, GET count)
+    api/push/subscribe/   # Web Push subscription registry (POST/DELETE)
+    api/push/daily/       # Cron target: sends the daily reminder push
   components/
     game-hub.tsx          # Home: game cards, stats, install button
     racing-game.tsx       # Turbo Rush UI (HUD, controls, overlays)
     quiz-game.tsx         # Brain Quiz UI
-    leaderboard.tsx       # Global top-10 dialog (offline-cached)
+    leaderboard.tsx       # Weekly + all-time top-10 dialog (offline-cached)
+    profile-dialog.tsx    # Avatar, stats, crowns, invite link
+    share-button.tsx      # Web Share API button (clipboard fallback)
+    push-reminder-button.tsx # Daily reminder opt-in toggle
     install-prompt.tsx    # Android "Install app" button
     pwa-register.tsx      # SW registration + score sync init
   lib/
@@ -83,11 +103,15 @@ src/
     racing/audio.ts       # Web Audio synthesized engine/SFX (no audio files)
     quiz-questions.ts     # English question bank (bundled = offline)
     leaderboard.ts        # Offline-first score sync (queue + cache)
+    profile.ts            # Avatar, referral code, weekly crowns
+    share.ts              # Web Share helpers
+    push.ts               # Push opt-in/subscribe client
+    tournament.ts         # ISO week helpers (shared client/server)
     game-store.ts         # localStorage reactive store
     turso.ts              # Server-only Turso client
 public/
   manifest.json           # PWA manifest (installable, standalone)
-  sw.js                   # Service Worker (offline shell + strategies)
+  sw.js                   # Service Worker (offline shell + push handlers)
   icons/                  # PWA icons (192/512/maskable/apple/favicon)
 scripts/
   init-turso.ts           # One-time DB bootstrap (bun run db:init)
@@ -103,9 +127,8 @@ bun run lint                 # ESLint
 bun run db:init              # create leaderboard tables (new DBs only)
 ```
 
-## 🔐 Security notes (later, by design)
+## 🔐 Security notes
 
-- The Turso token lives only in environment variables — never in the repo.
-- Score anti-cheat (server-side plausibility checks, per-device rate limits) is
-  planned as a later phase; the current schema keeps `device_id` per row so
-  checks can be added without migration.
+- The Turso token, VAPID private key and CRON secret live only in environment variables — never in the repo.
+- Anti-cheat pass #1 (Phase 3): per-game plausibility caps (422) + per-device live play-speed floor (429) on `POST /api/scores`; offline-flushed scores carry their original timestamp and skip the speed floor.
+- The daily push cron endpoint requires `Authorization: Bearer $CRON_SECRET` (set automatically by Vercel when the env var exists).

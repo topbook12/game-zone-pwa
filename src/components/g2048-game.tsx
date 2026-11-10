@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from '
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ChevronLeft, RotateCcw, Undo2 } from 'lucide-react'
+import { ShareButton } from '@/components/share-button'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { checkAchievements } from '@/lib/achievements'
@@ -507,6 +508,8 @@ export function G2048Game({ onExit }: G2048GameProps) {
     syncLine = <span className="text-amber-300">{t.common.syncQueued}</span>
   } else if (sync?.status === 'offline') {
     syncLine = <span className="text-amber-300">{t.common.syncOffline}</span>
+  } else if (sync?.status === 'rejected') {
+    syncLine = <span className="text-rose-400">{t.common.syncRejected}</span>
   }
 
   return (
@@ -642,6 +645,11 @@ export function G2048Game({ onExit }: G2048GameProps) {
                     <Button onClick={keepGoing} className="bg-amber-500 font-bold text-stone-950 hover:bg-amber-400">
                       {t.g2048.keepGoing}
                     </Button>
+                    <ShareButton
+                      title={t.hub.g2048Title}
+                      text={fmt(t.common.shareScore, { n: score, game: t.hub.g2048Title })}
+                      className="border-zinc-700 bg-zinc-800/80 font-bold text-zinc-200 hover:bg-zinc-700 hover:text-amber-300"
+                    />
                     <Button
                       variant="outline"
                       onClick={handleNewGame}
@@ -690,6 +698,11 @@ export function G2048Game({ onExit }: G2048GameProps) {
                   >
                     {t.g2048.playAgain}
                   </Button>
+                  <ShareButton
+                    title={t.hub.g2048Title}
+                    text={fmt(t.common.shareScore, { n: score, game: t.hub.g2048Title })}
+                    className="mt-2 w-full border-zinc-700 bg-zinc-800/80 font-bold text-zinc-200 hover:bg-zinc-700 hover:text-amber-300"
+                  />
                 </motion.div>
               </motion.div>
             )}

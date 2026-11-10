@@ -14,17 +14,22 @@ import { getLang } from '@/lib/i18n'
 const DEVICE_KEY = 'gz-device-id'
 const NAME_KEY = 'gz-player-name'
 const QUEUE_KEY = 'gz-score-queue'
-const TOP_CACHE_KEY = (game: string) => `gz-top-cache-${game}`
+const TOP_CACHE_KEY = (game: string, period: Period) => `gz-top-cache-${game}-${period}`
 
 export type GameId = 'racing' | 'quiz' | 'g2048' | 'snake'
+
+/** Leaderboard window — 'weekly' resets Monday 00:00 UTC. */
+export type Period = 'all' | 'weekly'
 
 export interface ScoreRow {
   player: string
   score: number
   at: number
+  /** Anonymous device id — lets the client highlight "you" + detect crowns. */
+  device?: string
 }
 
-export type SubmitStatus = 'synced' | 'queued' | 'offline'
+export type SubmitStatus = 'synced' | 'queued' | 'offline' | 'rejected'
 
 export interface SubmitOutcome {
   status: SubmitStatus
@@ -94,16 +99,17 @@ export function setPlayerName(name: string): string {
 export async function submitScore(game: GameId, score: number): Promise<SubmitOutcome> {
   const player = getPlayerName()
   const deviceId = getDeviceId()
+  const ts = Date.now()
 
   // Always remember locally (last submitted per game)
   try {
-    window.localStorage.setItem(`gz-last-${game}`, JSON.stringify({ score, ts: Date.now() }))
+    window.localStorage.setItem(`gz-last-${game}`, JSON.stringify({ score, ts }))
   } catch {
     /* ignore */
   }
 
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
-    enqueue({ game, player, deviceId, score, ts: Date.now() })
+    enqueue({ game, player, deviceId, score, ts })
     return { status: 'offline' }
   }
 
@@ -111,8 +117,12 @@ export async function submitScore(game: GameId, score: number): Promise<SubmitOu
     const res = await fetch('/api/scores', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ game, player, deviceId, score }),
+      body: JSON.stringify({ game, player, deviceId, score, ts }),
     })
+    if (res.status === 422 || res.status === 429) {
+      // Anti-cheat said no (implausible score / posting too fast) — drop it
+      return { status: 'rejected' }
+    }
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     const data = (await res.json()) as { rank?: number; best?: number }
     if (typeof data.rank === 'number' && data.rank >= 1 && data.rank <= 10) {
@@ -120,7 +130,7 @@ export async function submitScore(game: GameId, score: number): Promise<SubmitOu
     }
     return { status: 'synced', rank: data.rank, best: data.best }
   } catch {
-    enqueue({ game, player, deviceId, score, ts: Date.now() })
+    enqueue({ game, player, deviceId, score, ts })
     return { status: 'queued' }
   }
 }
@@ -174,8 +184,13 @@ export async function flushScoreQueue(): Promise<number> {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(item),
       })
-      if (res.ok) sent += 1
-      else remaining.push(item)
+      if (res.ok) {
+        sent += 1
+      } else if (res.status === 422 || res.status === 429) {
+        // Permanently rejected — do NOT re-queue (would ping-pong forever)
+      } else {
+        remaining.push(item)
+      }
     } catch {
       remaining.push(item)
     }
@@ -196,30 +211,34 @@ export interface TopCache {
   stale: boolean
 }
 
-export async function fetchTopScores(game: GameId, limit = 10): Promise<TopCache> {
+export async function fetchTopScores(
+  game: GameId,
+  limit = 10,
+  period: Period = 'all'
+): Promise<TopCache> {
   // Offline → serve local cache immediately
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
-    return readTopCache(game)
+    return readTopCache(game, period)
   }
   try {
-    const res = await fetch(`/api/scores?game=${game}&limit=${limit}`)
+    const res = await fetch(`/api/scores?game=${game}&limit=${limit}&period=${period}`)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     const data = (await res.json()) as { scores: ScoreRow[] }
     const cache: TopCache = { rows: data.scores ?? [], ts: Date.now(), stale: false }
     try {
-      window.localStorage.setItem(TOP_CACHE_KEY(game), JSON.stringify(cache))
+      window.localStorage.setItem(TOP_CACHE_KEY(game, period), JSON.stringify(cache))
     } catch {
       /* ignore */
     }
     return cache
   } catch {
-    return readTopCache(game)
+    return readTopCache(game, period)
   }
 }
 
-function readTopCache(game: GameId): TopCache {
+function readTopCache(game: GameId, period: Period): TopCache {
   try {
-    const raw = window.localStorage.getItem(TOP_CACHE_KEY(game))
+    const raw = window.localStorage.getItem(TOP_CACHE_KEY(game, period))
     if (raw) {
       const parsed = JSON.parse(raw) as TopCache
       return { ...parsed, stale: true }

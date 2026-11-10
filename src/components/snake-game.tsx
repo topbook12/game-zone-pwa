@@ -32,6 +32,7 @@ import {
   Volume2,
   VolumeX,
 } from 'lucide-react'
+import { ShareButton } from '@/components/share-button'
 import { Button } from '@/components/ui/button'
 import { checkAchievements } from '@/lib/achievements'
 import { readStoredNumber, STORAGE_KEYS, useStoredNumber, writeStoredNumber } from '@/lib/game-store'
@@ -844,6 +845,7 @@ export function SnakeGame({ onExit }: SnakeGameProps) {
               )}
               {sync?.status === 'queued' && <span className="text-amber-300">{t.common.syncQueued}</span>}
               {sync?.status === 'offline' && <span className="text-amber-300">{t.common.syncOffline}</span>}
+              {sync?.status === 'rejected' && <span className="text-rose-400">{t.common.syncRejected}</span>}
             </div>
             <div className="mt-1 flex w-full max-w-[220px] flex-col gap-2">
               <Button
@@ -852,6 +854,12 @@ export function SnakeGame({ onExit }: SnakeGameProps) {
               >
                 <RotateCcw className="mr-2 h-4 w-4" /> {t.snake.playAgain}
               </Button>
+              <ShareButton
+                size="default"
+                title={t.hub.snakeTitle}
+                text={fmt(t.common.shareScore, { n: result.score, game: t.hub.snakeTitle })}
+                className="h-10 border-white/25 bg-black/40 font-bold tracking-wide text-white hover:bg-white/10 hover:text-amber-300"
+              />
               <Button
                 onClick={goMenu}
                 variant="outline"

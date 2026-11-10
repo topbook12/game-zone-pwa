@@ -21,6 +21,12 @@ function notifyStorage(): void {
   storageListeners.forEach((listener) => listener())
 }
 
+/** Manually notify store subscribers (e.g. after writing a string key). */
+export function notifyStoreChange(): void {
+  if (typeof window === 'undefined') return
+  notifyStorage()
+}
+
 /** Read a number from localStorage (fallback when missing/SSR). */
 export function readStoredNumber(key: string, fallback = 0): number {
   if (typeof window === 'undefined') return fallback

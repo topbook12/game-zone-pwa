@@ -24,6 +24,8 @@ import { InstallPrompt } from '@/components/install-prompt'
 import { LanguageToggle } from '@/components/language-toggle'
 import { Leaderboard } from '@/components/leaderboard'
 import { AchievementsDialog } from '@/components/achievements-dialog'
+import { ProfileDialog } from '@/components/profile-dialog'
+import { PushReminderButton } from '@/components/push-reminder-button'
 import { GameErrorBoundary } from '@/components/error-boundary'
 import { RacingGame } from '@/components/racing-game'
 import { QuizGame } from '@/components/quiz-game'
@@ -31,6 +33,7 @@ import { G2048Game } from '@/components/g2048-game'
 import { SnakeGame } from '@/components/snake-game'
 import { useI18n } from '@/lib/i18n'
 import { useStoredNumber } from '@/lib/game-store'
+import { captureReferral, getAvatar } from '@/lib/profile'
 import { todayKey, seedFromDate, readDaily, getStreak, type DailyProgress } from '@/lib/daily'
 
 type View = 'hub' | 'racing' | 'quiz' | 'g2048' | 'snake'
@@ -60,9 +63,20 @@ export function GameHub() {
   const [view, setView] = useState<View>('hub')
   const [boardOpen, setBoardOpen] = useState(false)
   const [achOpen, setAchOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [avatar, setAvatar] = useState('🎮')
   const [daily, setDaily] = useState(false) // quiz opened in daily mode
   const [dailyStamp, setDailyStamp] = useState(0) // re-mount daily status card after a run
   const { t, lang } = useI18n()
+
+  /* Register incoming ?ref= invite links once per device (idempotent) */
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      void captureReferral()
+      setAvatar(getAvatar())
+    }, 0)
+    return () => window.clearTimeout(id)
+  }, [profileOpen])
 
   /** Reads localStorage reactively — updates instantly when a game finishes */
   const plays = useStoredNumber('gz-plays')
@@ -146,6 +160,21 @@ export function GameHub() {
           </div>
           <div className="flex items-center gap-2">
             <LanguageToggle />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setProfileOpen(true)
+                setAvatar(getAvatar())
+              }}
+              className="border-zinc-700 bg-zinc-900 px-2.5 text-zinc-200 hover:bg-zinc-800 hover:text-amber-300"
+              aria-label={t.profile.openAria}
+            >
+              <span className="text-base leading-none" aria-hidden="true">
+                {avatar}
+              </span>
+              <span className="hidden md:inline">{t.profile.title}</span>
+            </Button>
             <Button
               size="sm"
               variant="outline"
@@ -294,10 +323,12 @@ export function GameHub() {
                       )}
                     </Button>
                   </div>
+                  <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-[11px] leading-snug text-zinc-400">{t.push.desc}</p>
+                    <PushReminderButton />
+                  </div>
                 </CardContent>
               </Card>
-
-              {/* Stats */}
               <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 <Card className="border-zinc-800 bg-zinc-900/60">
                   <CardContent className="flex flex-col items-center gap-0.5 p-3 text-center">
@@ -488,9 +519,10 @@ export function GameHub() {
         )}
       </main>
 
-      {/* Global leaderboard + achievements dialogs */}
+      {/* Global leaderboard + achievements + profile dialogs */}
       <Leaderboard open={boardOpen} onOpenChange={setBoardOpen} />
       <AchievementsDialog open={achOpen} onOpenChange={setAchOpen} />
+      <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
 
       {/* Achievement toasts */}
       <Toaster

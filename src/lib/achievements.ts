@@ -252,3 +252,8 @@ export function getAchievements(lang: Lang): Achievement[] {
 export function unlockedCount(): number {
   return Object.keys(readStore()).length
 }
+
+/** Total number of defined achievements (for "x/14" progress labels). */
+export function achievementsTotal(): number {
+  return DEFS.length
+}

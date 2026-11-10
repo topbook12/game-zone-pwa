@@ -16,10 +16,12 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
   fetchTopScores,
+  getDeviceId,
   getPlayerName,
   setPlayerName,
   initLeaderboardSync,
   type GameId,
+  type Period,
   type ScoreRow,
   type TopCache,
 } from '@/lib/leaderboard'
@@ -43,7 +45,18 @@ function formatWhen(ts: number): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-function TopList({ cache, emptyLabel }: { cache: TopCache | undefined; emptyLabel: string }) {
+function TopList({
+  cache,
+  emptyLabel,
+  period,
+  youDevice,
+}: {
+  cache: TopCache | undefined
+  emptyLabel: string
+  period: Period
+  youDevice: string
+}) {
+  const { t } = useI18n()
   if (!cache) {
     return (
       <div className="flex flex-col gap-2 py-2">
@@ -59,23 +72,39 @@ function TopList({ cache, emptyLabel }: { cache: TopCache | undefined; emptyLabe
   }
   return (
     <ol className="flex max-h-[46dvh] flex-col gap-1.5 overflow-y-auto py-1 pr-1 [scrollbar-width:thin]">
-      {rows.map((row, i) => (
-        <li
-          key={`${row.player}-${row.at}-${i}`}
-          className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-900/70 px-3 py-2"
-        >
-          <span className="w-9 shrink-0 text-center text-sm font-bold text-amber-300">
-            {medalFor(i + 1)}
-          </span>
-          <span className="min-w-0 flex-1 truncate text-sm font-semibold text-zinc-100">
-            {row.player}
-          </span>
-          <span className="shrink-0 text-xs text-zinc-500">{formatWhen(row.at)}</span>
-          <span className="shrink-0 text-sm font-bold text-amber-300">
-            {row.score.toLocaleString('en-US')}
-          </span>
-        </li>
-      ))}
+      {rows.map((row, i) => {
+        const isYou = !!row.device && row.device === youDevice
+        const isChampion = period === 'weekly' && i === 0 && row.score > 0
+        return (
+          <li
+            key={`${row.player}-${row.at}-${i}`}
+            className={`flex items-center gap-3 rounded-lg border px-3 py-2 ${
+              isYou ? 'border-amber-500/50 bg-amber-500/10' : 'border-zinc-800 bg-zinc-900/70'
+            }`}
+          >
+            <span
+              title={isChampion ? t.board.champion : undefined}
+              className={`shrink-0 text-center text-sm font-bold text-amber-300 ${
+                isChampion ? 'w-11' : 'w-9'
+              }`}
+            >
+              {isChampion ? '👑 🥇' : medalFor(i + 1)}
+            </span>
+            <span className="flex min-w-0 flex-1 items-center gap-1.5 text-sm font-semibold text-zinc-100">
+              <span className="min-w-0 truncate">{row.player}</span>
+              {isYou && (
+                <span className="shrink-0 rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[9px] font-bold text-amber-300">
+                  {t.board.you}
+                </span>
+              )}
+            </span>
+            <span className="shrink-0 text-xs text-zinc-500">{formatWhen(row.at)}</span>
+            <span className="shrink-0 text-sm font-bold text-amber-300">
+              {row.score.toLocaleString('en-US')}
+            </span>
+          </li>
+        )
+      })}
     </ol>
   )
 }
@@ -84,34 +113,45 @@ function TopList({ cache, emptyLabel }: { cache: TopCache | undefined; emptyLabe
 export function Leaderboard({ open, onOpenChange }: Props) {
   const { t } = useI18n()
   const [tab, setTab] = useState<GameId>('racing')
-  /** Scores per game — undefined = still loading (skeleton). */
-  const [byGame, setByGame] = useState<Partial<Record<GameId, TopCache>>>({})
+  /** Scores per game per period — undefined = still loading (skeleton). */
+  const [byGame, setByGame] = useState<
+    Partial<Record<GameId, Partial<Record<Period, TopCache>>>>
+  >({})
   const [reloadKey, setReloadKey] = useState(0)
+  /** Weekly tournaments are front-and-center. */
+  const [period, setPeriod] = useState<Period>('weekly')
   /** Lazy init is SSR-safe: the dialog content is never rendered server-side. */
   const [name, setName] = useState('Player')
+  /** Client-only device id — highlights the viewer's own row. */
+  const [youDevice, setYouDevice] = useState('')
   const [editing, setEditing] = useState(false)
   const [savedFlash, setSavedFlash] = useState(false)
 
   /* Flush queued scores once on mount + whenever the device comes back online */
   useEffect(() => initLeaderboardSync(), [])
 
-  /* Read the stored player name only after mount (client-only value) */
+  /* Read the stored player name + device id only after mount (client-only values) */
   useEffect(() => {
-    const id = window.setTimeout(() => setName(getPlayerName()), 0)
+    const id = window.setTimeout(() => {
+      setName(getPlayerName())
+      setYouDevice(getDeviceId())
+    }, 0)
     return () => window.clearTimeout(id)
   }, [])
 
-  /* Fetch top scores whenever the dialog opens / tab changes / refresh clicked */
+  /* Fetch top scores whenever the dialog opens / tab / period changes / refresh clicked */
   useEffect(() => {
     if (!open) return
     let cancelled = false
-    fetchTopScores(tab, 10).then((cache) => {
-      if (!cancelled) setByGame((prev) => ({ ...prev, [tab]: cache }))
+    fetchTopScores(tab, 10, period).then((cache) => {
+      if (!cancelled) {
+        setByGame((prev) => ({ ...prev, [tab]: { ...prev[tab], [period]: cache } }))
+      }
     })
     return () => {
       cancelled = true
     }
-  }, [open, tab, reloadKey])
+  }, [open, tab, period, reloadKey])
 
   const refresh = useCallback(() => setReloadKey((k) => k + 1), [])
 
@@ -123,8 +163,9 @@ export function Leaderboard({ open, onOpenChange }: Props) {
     window.setTimeout(() => setSavedFlash(false), 1500)
   }
 
-  const cache = byGame[tab]
+  const cache = byGame[tab]?.[period]
   const stale = cache?.stale ?? false
+  const emptyLabel = period === 'weekly' ? t.board.weeklyEmpty : t.board.empty
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -181,6 +222,41 @@ export function Leaderboard({ open, onOpenChange }: Props) {
           )}
         </div>
 
+        {/* Period toggle — weekly tournament vs. all-time */}
+        <div
+          className="grid grid-cols-2 gap-1 rounded-lg bg-zinc-900 p-1"
+          role="group"
+          aria-label={t.board.periodAria}
+        >
+          <button
+            type="button"
+            onClick={() => setPeriod('weekly')}
+            aria-pressed={period === 'weekly'}
+            className={`rounded-md py-1.5 text-xs font-semibold transition-colors ${
+              period === 'weekly'
+                ? 'bg-amber-500/20 text-amber-300'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            {t.board.thisWeek}
+          </button>
+          <button
+            type="button"
+            onClick={() => setPeriod('all')}
+            aria-pressed={period === 'all'}
+            className={`rounded-md py-1.5 text-xs font-semibold transition-colors ${
+              period === 'all'
+                ? 'bg-amber-500/20 text-amber-300'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            {t.board.allTime}
+          </button>
+        </div>
+        {period === 'weekly' && (
+          <p className="text-center text-[10px] text-zinc-500">{t.board.weeklyResets}</p>
+        )}
+
         <Tabs value={tab} onValueChange={(v) => setTab(v as GameId)}>
           <TabsList className="grid w-full grid-cols-2 bg-zinc-900">
             <TabsTrigger
@@ -210,16 +286,36 @@ export function Leaderboard({ open, onOpenChange }: Props) {
           </TabsList>
 
           <TabsContent value="racing">
-            <TopList cache={byGame.racing} emptyLabel={t.board.empty} />
+            <TopList
+              cache={byGame.racing?.[period]}
+              emptyLabel={emptyLabel}
+              period={period}
+              youDevice={youDevice}
+            />
           </TabsContent>
           <TabsContent value="quiz">
-            <TopList cache={byGame.quiz} emptyLabel={t.board.empty} />
+            <TopList
+              cache={byGame.quiz?.[period]}
+              emptyLabel={emptyLabel}
+              period={period}
+              youDevice={youDevice}
+            />
           </TabsContent>
           <TabsContent value="g2048">
-            <TopList cache={byGame.g2048} emptyLabel={t.board.empty} />
+            <TopList
+              cache={byGame.g2048?.[period]}
+              emptyLabel={emptyLabel}
+              period={period}
+              youDevice={youDevice}
+            />
           </TabsContent>
           <TabsContent value="snake">
-            <TopList cache={byGame.snake} emptyLabel={t.board.empty} />
+            <TopList
+              cache={byGame.snake?.[period]}
+              emptyLabel={emptyLabel}
+              period={period}
+              youDevice={youDevice}
+            />
           </TabsContent>
         </Tabs>
 

@@ -44,4 +44,25 @@ await db.execute(
   `CREATE INDEX IF NOT EXISTS idx_scores_device ON scores (device_id, game)`
 )
 
+// Phase 3 — referrals: one row per device that joined through a ?ref= link
+await db.execute(`
+  CREATE TABLE IF NOT EXISTS referrals (
+    device_id TEXT PRIMARY KEY,
+    ref TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  )
+`)
+await db.execute(`CREATE INDEX IF NOT EXISTS idx_referrals_ref ON referrals (ref)`)
+
+// Phase 3 — web push subscriptions for the daily reminder
+await db.execute(`
+  CREATE TABLE IF NOT EXISTS push_subs (
+    endpoint TEXT PRIMARY KEY,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    tz INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL
+  )
+`)
+
 console.log('✓ Turso ready — tables ensured at', url)

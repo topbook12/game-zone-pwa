@@ -3,7 +3,7 @@
 **Principle:** every phase must stay cost-effective (client-first, free tiers, no idle servers)
 and ship *premium-feeling* features players love. One release per week is enough — quality > speed.
 
-> Current status (Day 25): Racing v2 ✅ · Quiz v2 ✅ · 2048 ✅ · Snake ✅ · Daily challenge ✅ · Achievements ✅ · PWA offline ✅ · Global leaderboard ✅ · Vercel deploy ✅ · **Phase 2 content ✅ (v2.0)**
+> Current status (Day 45): Racing v2 ✅ · Quiz v2 ✅ · 2048 ✅ · Snake ✅ · Daily challenge ✅ · Achievements ✅ · PWA offline ✅ · Global leaderboard ✅ · Vercel deploy ✅ · Phase 2 content ✅ · **Phase 3 social ✅ (v2.1)**
 
 ---
 
@@ -33,15 +33,15 @@ and ship *premium-feeling* features players love. One release per week is enough
 
 **Milestone:** ✅ daily-return habit loop (daily challenge + achievements) + 4-game hub shipped.
 
-## Phase 3 — Social & competition (Day 26–45)
-- [ ] Weekly tournaments: reset window per game, winner badge on profile
-- [ ] Player profile card: avatar (emoji picker), total plays, best ranks (all localStorage)
-- [ ] Share button: Web Share API — "I scored X, beat me!" (free viral loop)
-- [ ] Referral deep links (?ref=) — counts installs per referrer
-- [ ] Web Push (VAPID, free): daily challenge reminder opt-in
-- [ ] Anti-cheat pass #1: server-side plausibility checks on score POST (speed of plays, max score/game)
+## Phase 3 — Social & competition (Day 26–45) ✅ DONE — shipped as v2.1
+- [x] Weekly tournaments: "This week" / "All time" toggle per game, window resets Monday 00:00 UTC (`created_at >= weekStart`), weekly #1 gets 👑 crown in the list + *Weekly champion* title + a persistent weekly-wins counter on the profile
+- [x] Player profile card: emoji avatar picker (16 options, header button shows your avatar), total plays, badges x/14, weekly wins, personal bests for all 4 games (all localStorage)
+- [x] Share button: Web Share API on every game-over screen + profile — "I scored X in {game}! Can you beat me? 🎮" with clipboard fallback + toast, links carry the player's `?ref=` code (free viral loop)
+- [x] Referral deep links (?ref=): captured once per device, URL cleaned after load, `referrals` table counts installs per referrer, profile shows "Friends joined" (edge-cached GET)
+- [x] Web Push (VAPID, free): opt-in button on the Daily Challenge card, SW v8 push + notificationclick handlers, `/api/push/subscribe` registry (Turso), daily Vercel cron (13:00 UTC) sends only to devices in the ~5–10 PM local window, expired subs auto-pruned
+- [x] Anti-cheat pass #1: per-game plausibility caps (racing 250k / quiz 20k / 2048 150k / snake 25k → 422) + per-device live play-speed floor 8 s (→ 429); offline-flushed scores carry their original ts and skip the floor; 422/429 are dropped client-side (never re-queued)
 
-**Milestone:** players invite friends; leaderboards feel alive.
+**Milestone:** ✅ players can invite friends, share scores, compete weekly; leaderboards feel alive.
 
 ## Phase 4 — Monetization v1 (Day 46–70) 💰
 > Goal: first revenue **without** hurting free play.

@@ -15,6 +15,7 @@ import {
   Flame,
   Check,
 } from 'lucide-react'
+import { ShareButton } from '@/components/share-button'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { fmt, useI18n, getLang } from '@/lib/i18n'
@@ -303,6 +304,9 @@ export function QuizGame({ onExit, daily }: QuizGameProps) {
           {sync?.status === 'offline' && (
             <span className="text-amber-300">{t.common.syncOffline}</span>
           )}
+          {sync?.status === 'rejected' && (
+            <span className="text-rose-400">{t.common.syncRejected}</span>
+          )}
         </div>
 
         {mode === 'daily' && (
@@ -319,6 +323,11 @@ export function QuizGame({ onExit, daily }: QuizGameProps) {
             <RotateCcw className="h-4 w-4" />
             {t.quiz.playAgain}
           </Button>
+          <ShareButton
+            title={t.hub.quizTitle}
+            text={fmt(t.common.shareScore, { n: result.score, game: t.hub.quizTitle })}
+            className="border-zinc-600 bg-zinc-900 font-bold text-zinc-200 hover:bg-zinc-800 hover:text-amber-300"
+          />
           <Button
             onClick={() => setPhase('select')}
             variant="outline"

@@ -18,6 +18,7 @@ import {
   ChevronRight as SteerRight,
   Smartphone,
 } from 'lucide-react'
+import { ShareButton } from '@/components/share-button'
 import { Button } from '@/components/ui/button'
 import { RacingEngine } from '@/lib/racing/engine'
 import { SoundEngine } from '@/lib/racing/audio'
@@ -833,6 +834,9 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
                 {sync?.status === 'offline' && (
                   <span className="text-amber-300">{t.common.syncOffline}</span>
                 )}
+                {sync?.status === 'rejected' && (
+                  <span className="text-rose-400">{t.common.syncRejected}</span>
+                )}
               </div>
 
               <div className="flex w-full flex-col gap-2">
@@ -842,6 +846,12 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
                 >
                   <RotateCcw className="mr-2 h-5 w-5" /> {t.racing.raceAgain}
                 </Button>
+                <ShareButton
+                  size="default"
+                  title={t.hub.racingTitle}
+                  text={fmt(t.common.shareScore, { n: result.score, game: t.hub.racingTitle })}
+                  className="h-11 border-zinc-700 bg-zinc-900/80 font-bold tracking-wide text-zinc-200 hover:bg-zinc-800 hover:text-amber-300"
+                />
                 <Button
                   onClick={backToMenu}
                   variant="outline"
