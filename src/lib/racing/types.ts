@@ -47,3 +47,11 @@ export interface EngineOptions {
   onPhase?: (phase: GamePhase) => void
   onEvent?: (event: GameEvent) => void
 }
+
+/** Cosmetic skin spec (Phase 4 — pure client, no server cost). */
+export interface CarCosmetics {
+  /** player car paint color (#rrggbb) */
+  carColor?: string
+  /** exhaust trail — null/omitted = no trail */
+  trail?: { color: string; glow?: string; rainbow?: boolean } | null
+}

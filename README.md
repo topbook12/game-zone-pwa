@@ -20,6 +20,14 @@ EN/বাংলা toggle · offline score queue · SW update card · compressed
 - 🛡 **Anti-cheat pass #1** — server-side plausibility caps per game + per-device play-speed floor on live submissions (offline-flushed scores are never punished)
 - Full EN/বাংলা for every new string · SW v8 with push + notification-click handling
 
+**v2.2 highlights (Day 46–70, Phase 4 — monetization v1):**
+- 🪙 **Coin economy** — coins for every play (per-game formulas + daily cap 400/day) and every rewarded ad; balance lives on-device (works offline), every earn/spend is batch-synced to a server-side `coin_events` ledger on Turso (claim-then-send, offline-safe)
+- 🎬 **Rewarded ads (honest)** — clearly-labeled demo ad player today; network-agnostic adapter (`src/lib/ads.ts`) so a real network (AdSense H5 Games / AdMob via TWA / StartApp) plugs in by swapping ONE constant. Placements: **+2 nitro** (racing menu), **+1 lifeline** (quiz 50:50), **double coins** (all 4 game-over screens), flat +25 coins. Hard cap: 10 ads/day, enforced on-device AND server-side
+- 🛍 **Cosmetics shop** — header coin pill opens the shop: 6 car paints, 4 exhaust trails (incl. rainbow), 4 quiz themes. Pure client skins (localStorage), 🪙 300–900, one free default each — zero server cost
+- 🔥 **Streak bonus** — +5% play coins per consecutive day (max +25%)
+- ✍️ **Signed ad rewards** — `/api/coins/ad-reward` verifies HMAC-SHA256 signatures + replay nonces, ready for real ad-network S2S callbacks (set `COIN_SECRET`)
+- Full EN/বাংলা for every new string · SW v9 · `coin_events` table self-migrates on first request (no manual db step)
+
 ---
 
 ## 🚀 Deploy to Vercel (5 minutes, free)
@@ -38,6 +46,7 @@ EN/বাংলা toggle · offline score queue · SW update card · compressed
    | `VAPID_PRIVATE_KEY` | *(matching private key — keep it secret)* |
    | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | *(same public key — needed by the browser to subscribe)* |
    | `CRON_SECRET` | *(any random string — protects the daily push cron endpoint)* |
+   | `COIN_SECRET` | *(random 32-byte hex — signs ad-reward S2S callbacks; `openssl rand -hex 32`)* |
 
 3. **(Recommended) Set function region** — Project → Settings → Functions → Region: **Mumbai (bom1)**.
    Your Turso DB lives in `aws-ap-south-1` (Mumbai), so this gives the lowest latency for
@@ -45,8 +54,19 @@ EN/বাংলা toggle · offline score queue · SW update card · compressed
 
 4. Click **Deploy**. Done — your PWA is live at `https://your-app.vercel.app`.
 
-> The database tables are already created. If you ever use a **new** Turso database, run `bun run db:init` locally once (with the same env vars in `.env.local`) — it creates the `scores`, `referrals` and `push_subs` tables.
+> The database tables are already created. If you ever use a **new** Turso database, run `bun run db:init` locally once (with the same env vars in `.env.local`) — it creates the `scores`, `referrals`, `push_subs` and `coin_events` tables.
 > The daily push cron is registered in `vercel.json` (once a day, 13:00 UTC) — Vercel Hobby includes it free.
+
+### Connecting a real ad network (when ready)
+
+The whole rewarded-ad flow ships today with an **honest demo player** (labeled placeholder, 5 s countdown, close-early = no reward). To go live:
+
+1. Get approved on a network that works for PWA/HTML5 games (e.g. **Google AdSense H5 Games**; AdMob needs the Play Store TWA from Phase 6).
+2. Implement the `RewardedAdapter` interface in `src/lib/ads.ts` (show → resolves `'completed'` only on a fully-watched ad) and flip `ACTIVE_ADAPTER`.
+3. If the network offers **server-to-server callbacks**, point them at `POST /api/coins/ad-reward` and set `COIN_SECRET` — the endpoint verifies `HMAC_SHA256(secret, deviceId:amount:nonce:ts)` + replay nonces and writes the certified event to the `coin_events` ledger.
+4. Nothing else changes: caps, ledger sync, shop and rewards keep working exactly the same.
+
+> Honest-monetization rule: coins only ever buy cosmetics. No cash-out claims, no pay-to-win — ads are always opt-in with the reward stated up-front.
 
 ### Manual test after deploy (Android)
 
@@ -103,6 +123,9 @@ src/
     racing/audio.ts       # Web Audio synthesized engine/SFX (no audio files)
     quiz-questions.ts     # English question bank (bundled = offline)
     leaderboard.ts        # Offline-first score sync (queue + cache)
+    coins.ts              # Coin economy (ledger, daily caps, streak, offline queue)
+    ads.ts                # Rewarded-ad adapter layer (demo player today)
+    cosmetics.ts          # Shop catalog + owned/selected skins (localStorage)
     profile.ts            # Avatar, referral code, weekly crowns
     share.ts              # Web Share helpers
     push.ts               # Push opt-in/subscribe client

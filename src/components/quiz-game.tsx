@@ -23,6 +23,9 @@ import { readStoredNumber, useStoredNumber, writeStoredNumber, STORAGE_KEYS } fr
 import { submitScore, type SubmitOutcome } from '@/lib/leaderboard'
 import { completeDaily, todaySeed } from '@/lib/daily'
 import { checkAchievements } from '@/lib/achievements'
+import { RewardedAdDialog } from '@/components/rewarded-ad-dialog'
+import { computePlayCoins, earnPlayCoins } from '@/lib/coins'
+import { getCosmetic, useCosmetics } from '@/lib/cosmetics'
 import {
   QUIZ_CATEGORIES,
   QUIZ_QUESTIONS,
@@ -35,6 +38,9 @@ import {
 type Phase = 'select' | 'play' | 'result'
 
 const QUESTION_TIME = 15
+
+/** Lifelines (50:50) every quiz run starts with — a rewarded ad can add +1 more. */
+const BASE_LIFELINES = 1
 
 interface QuizGameProps {
   onExit: () => void
@@ -64,8 +70,33 @@ export function QuizGame({ onExit, daily }: QuizGameProps) {
   const [result, setResult] = useState<ResultState | null>(null)
   const [sync, setSync] = useState<SubmitOutcome | null>(null)
 
+  /* ---- Phase 4: monetization state ---- */
+  /** Coins granted by earnPlayCoins for the finished run (0 = none / capped). */
+  const [coinsGranted, setCoinsGranted] = useState(0)
+  const [doubled, setDoubled] = useState(false)
+  const [doubleAdOpen, setDoubleAdOpen] = useState(false)
+  const [lifelineAdOpen, setLifelineAdOpen] = useState(false)
+  /** Rewarded-ad lifeline bonus — applies to exactly the next run. */
+  const [adBonusLifelines, setAdBonusLifelines] = useState(0)
+  /** Ref mirror of adBonusLifelines — keeps startQuiz/startDaily identity stable
+   *  so the daily auto-start effect never re-fires when the bonus changes. */
+  const adBonusRef = useRef(0)
+  /** Lifelines available in the current run (base + ad bonus, fixed at start). */
+  const [lifelines, setLifelines] = useState(BASE_LIFELINES)
+  /** Option indices hidden by the 50:50 lifeline on the current question. */
+  const [removedOptions, setRemovedOptions] = useState<number[]>([])
+  /** Guards earnPlayCoins against a double grant for the same finished run. */
+  const coinsEarnedRef = useRef(false)
+
   /** Best score — reactive localStorage store (hydration safe) */
   const best = useStoredNumber(STORAGE_KEYS.quizBest(category))
+
+  /* Phase 4 — equipped quiz theme (hydration-safe: useSyncExternalStore SSR defaults) */
+  const cosmetics = useCosmetics()
+  const theme = getCosmetic(cosmetics.theme) ?? getCosmetic('theme-default')!
+  const themeStyle = {
+    background: 'linear-gradient(160deg, ' + (theme.from ?? '#1c1917') + ', ' + (theme.to ?? '#292524') + ')',
+  }
 
   /* Start quiz (random per category) */
   const startQuiz = useCallback((cat: QuizCategoryId) => {
@@ -81,6 +112,16 @@ export function QuizGame({ onExit, daily }: QuizGameProps) {
     setGained(0)
     setResult(null)
     setSync(null)
+    /* Phase 4 — lifelines for this run: base + ad bonus, then consume the bonus */
+    setLifelines(BASE_LIFELINES + adBonusRef.current)
+    adBonusRef.current = 0
+    setAdBonusLifelines(0)
+    setRemovedOptions([])
+    /* Phase 4 — reset per-run coin state */
+    setCoinsGranted(0)
+    setDoubled(false)
+    setDoubleAdOpen(false)
+    coinsEarnedRef.current = false
     setPhase('play')
   }, [])
 
@@ -98,6 +139,16 @@ export function QuizGame({ onExit, daily }: QuizGameProps) {
     setGained(0)
     setResult(null)
     setSync(null)
+    /* Phase 4 — lifelines for this run: base + ad bonus, then consume the bonus */
+    setLifelines(BASE_LIFELINES + adBonusRef.current)
+    adBonusRef.current = 0
+    setAdBonusLifelines(0)
+    setRemovedOptions([])
+    /* Phase 4 — reset per-run coin state */
+    setCoinsGranted(0)
+    setDoubled(false)
+    setDoubleAdOpen(false)
+    coinsEarnedRef.current = false
     setPhase('play')
   }, [])
 
@@ -125,6 +176,33 @@ export function QuizGame({ onExit, daily }: QuizGameProps) {
     },
     [answered, questions, qIndex, timeLeft]
   )
+
+  /* Phase 4 — 50:50 lifeline: hide two wrong options for the current question */
+  const handleFiftyFifty = useCallback(() => {
+    if (lifelines <= 0 || answered !== null || removedOptions.length > 0) return
+    const q = questions[qIndex]
+    if (!q) return
+    const wrong = q.options.map((_, i) => i).filter((i) => i !== q.answer)
+    for (let i = wrong.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      const tmp = wrong[i]
+      wrong[i] = wrong[j]
+      wrong[j] = tmp
+    }
+    setRemovedOptions(wrong.slice(0, 2))
+    setLifelines((n) => n - 1)
+  }, [answered, lifelines, questions, qIndex, removedOptions])
+
+  /* Phase 4 — rewarded-ad callbacks */
+  const handleLifelineAdCompleted = useCallback(() => {
+    adBonusRef.current += 1
+    setAdBonusLifelines((n) => n + 1)
+  }, [])
+
+  const handleDoubleAdCompleted = useCallback((granted: number) => {
+    // Coins were already added by the dialog internals — just flip the chip.
+    if (granted > 0) setDoubled(true)
+  }, [])
 
   /* Timer (stops once answered) — deadline kept in a ref so ticks don't re-subscribe */
   const deadlineRef = useRef(0)
@@ -163,6 +241,11 @@ export function QuizGame({ onExit, daily }: QuizGameProps) {
           setResult({ score, correct: correctCount, total, isBest: false })
         }
         writeStoredNumber(STORAGE_KEYS.plays, readStoredNumber(STORAGE_KEYS.plays, 0) + 1)
+        /* Phase 4 — play coins, granted exactly once per finished run (ref-guarded) */
+        if (!coinsEarnedRef.current) {
+          coinsEarnedRef.current = true
+          setCoinsGranted(earnPlayCoins('quiz', score))
+        }
         setSync(null)
         submitScore('quiz', score)
           .then(setSync)
@@ -173,6 +256,7 @@ export function QuizGame({ onExit, daily }: QuizGameProps) {
         setAnswered(null)
         setTimeLeft(QUESTION_TIME)
         setGained(0)
+        setRemovedOptions([])
       }
     }, 1400)
     return () => clearTimeout(id)
@@ -184,7 +268,7 @@ export function QuizGame({ onExit, daily }: QuizGameProps) {
   /* ---------------- category select ---------------- */
   if (phase === 'select') {
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4" style={themeStyle}>
         <div className="flex items-center justify-between">
           <Button
             variant="outline"
@@ -226,6 +310,27 @@ export function QuizGame({ onExit, daily }: QuizGameProps) {
             </button>
           ))}
         </div>
+
+        {/* Phase 4 — rewarded-ad lifeline bonus for the next run */}
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setLifelineAdOpen(true)}
+            className="h-9 border-amber-500/40 bg-zinc-900/80 text-xs font-bold text-amber-300 hover:bg-zinc-800 hover:text-amber-300"
+          >
+            {t.coins.plusLifeline}
+          </Button>
+          {adBonusLifelines > 0 && (
+            <span className="text-xs font-semibold text-emerald-300">{t.coins.lifelineReady}</span>
+          )}
+        </div>
+        <RewardedAdDialog
+          open={lifelineAdOpen}
+          onOpenChange={setLifelineAdOpen}
+          placement="lifeline"
+          onCompleted={handleLifelineAdCompleted}
+        />
       </div>
     )
   }
@@ -243,7 +348,7 @@ export function QuizGame({ onExit, daily }: QuizGameProps) {
             : t.quiz.msgPractice
 
     return (
-      <div className="flex flex-col items-center gap-5 py-4 text-center">
+      <div className="flex flex-col items-center gap-5 py-4 text-center" style={themeStyle}>
         <div className="flex items-center justify-center">
           <div className="rounded-full border-2 border-amber-500/40 bg-amber-500/10 p-5">
             <Trophy className="h-10 w-10 text-amber-400" />
@@ -309,6 +414,43 @@ export function QuizGame({ onExit, daily }: QuizGameProps) {
           )}
         </div>
 
+        {/* Phase 4 — coins earned for this run + optional rewarded doubling */}
+        {coinsGranted > 0 || computePlayCoins('quiz', result.score) > 0 ? (
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {coinsGranted > 0 ? (
+              <>
+                <span className="text-xs font-bold text-amber-300">
+                  🪙 {fmt(t.coins.earned, { n: coinsGranted })}
+                </span>
+                {doubled ? (
+                  <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-300">
+                    {t.coins.doubled}
+                  </span>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDoubleAdOpen(true)}
+                    disabled={doubleAdOpen}
+                    className="h-9 border-amber-500/40 bg-zinc-900/80 text-xs font-bold text-amber-300 hover:bg-zinc-800 hover:text-amber-300"
+                  >
+                    {t.coins.doubleIt}
+                  </Button>
+                )}
+              </>
+            ) : (
+              <span className="text-xs text-zinc-500">{t.coins.dailyCap}</span>
+            )}
+          </div>
+        ) : null}
+        <RewardedAdDialog
+          open={doubleAdOpen}
+          onOpenChange={setDoubleAdOpen}
+          placement="double"
+          doubleAmount={coinsGranted}
+          onCompleted={handleDoubleAdCompleted}
+        />
+
         {mode === 'daily' && (
           <div className="rounded-full border border-amber-400/50 bg-amber-500/15 px-4 py-1.5 text-sm font-semibold text-amber-300">
             {t.quiz.dailyDone}
@@ -355,7 +497,7 @@ export function QuizGame({ onExit, daily }: QuizGameProps) {
   const catInfo = QUIZ_CATEGORIES.find((c) => c.id === current.category)
 
   return (
-    <div className="mx-auto flex w-full max-w-[560px] flex-col gap-4">
+    <div className="mx-auto flex w-full max-w-[560px] flex-col gap-4" style={themeStyle}>
       {/* progress */}
       <div className="flex items-center justify-between text-sm">
         <span className="font-semibold text-zinc-300">
@@ -391,6 +533,22 @@ export function QuizGame({ onExit, daily }: QuizGameProps) {
         </span>
       </div>
 
+      {/* Phase 4 — 50:50 lifeline (base + rewarded-ad bonus) */}
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleFiftyFifty}
+          disabled={lifelines <= 0 || answered !== null || removedOptions.length > 0}
+          className="h-9 border-amber-500/40 bg-zinc-900/80 text-xs font-bold text-amber-300 hover:bg-zinc-800 hover:text-amber-300"
+        >
+          50:50
+          <span className="ml-1.5 rounded-full bg-amber-500/15 px-1.5 text-[10px] text-amber-300">
+            ×{lifelines}
+          </span>
+        </Button>
+      </div>
+
       {/* playing badge */}
       {mode === 'daily' && (
         <div className="mx-auto flex w-fit items-center gap-1.5 rounded-full border border-amber-400/50 bg-amber-500/15 px-3 py-1 text-[11px] font-black tracking-[0.2em] text-amber-300">
@@ -420,16 +578,18 @@ export function QuizGame({ onExit, daily }: QuizGameProps) {
           const showCorrect = answered !== null && isCorrect
           const showWrong = answered !== null && isPicked && !isCorrect
 
+          const isRemoved = removedOptions.includes(idx)
           let cls = 'border-zinc-700 bg-zinc-900/80 text-zinc-100 hover:border-amber-500/60 hover:bg-zinc-800'
           if (showCorrect) cls = 'border-emerald-500 bg-emerald-600 text-white'
           else if (showWrong) cls = 'border-red-500 bg-red-600/90 text-white'
+          else if (isRemoved) cls = 'border-zinc-800/60 bg-zinc-900/40 text-zinc-600 line-through'
           else if (answered !== null) cls = 'border-zinc-800 bg-zinc-900/60 text-zinc-500'
 
           return (
             <button
               key={idx}
               onClick={() => handleAnswer(idx)}
-              disabled={answered !== null}
+              disabled={answered !== null || isRemoved}
               className={`flex items-center justify-between gap-3 rounded-xl border-2 px-4 py-3.5 text-left text-sm font-semibold transition-all duration-150 active:scale-[0.98] disabled:cursor-default sm:text-base ${cls}`}
               aria-label={fmt(t.quiz.answerAria, { n: idx + 1, opt })}
             >

@@ -305,18 +305,19 @@ function drawTrafficCar(color: string): HTMLCanvasElement {
 
 /* ---------------- player car (rear view, big) ---------------- */
 
-function drawPlayerCar(braking: boolean): HTMLCanvasElement {
+const DEFAULT_CAR_COLOR = '#d92328'
+
+function drawPlayerCar(braking: boolean, body: string = DEFAULT_CAR_COLOR): HTMLCanvasElement {
   const { c, x } = mk(460, 300)
-  const body = '#d92328'
   // wheels
   fillRR(x, 26, 210, 76, 80, 12, '#101013')
   fillRR(x, 358, 210, 76, 80, 12, '#101013')
   x.fillStyle = '#2c2c31'
   x.fillRect(36, 228, 56, 6)
   x.fillRect(368, 228, 56, 6)
-  // spoiler wing + struts
-  fillRR(x, 64, 24, 332, 20, 9, '#3d0c0f')
-  x.fillStyle = '#2b080a'
+  // spoiler wing + struts (tinted to match the paint)
+  fillRR(x, 64, 24, 332, 20, 9, shade(body, -55))
+  x.fillStyle = shade(body, -62)
   x.fillRect(146, 42, 18, 22)
   x.fillRect(296, 42, 18, 22)
   // roof / cabin
@@ -395,6 +396,6 @@ export function createSpriteAssets(): SpriteAssets {
   return assets
 }
 
-export function createPlayerCar(): PlayerCarImages {
-  return { normal: drawPlayerCar(false), brake: drawPlayerCar(true) }
+export function createPlayerCar(bodyColor: string = DEFAULT_CAR_COLOR): PlayerCarImages {
+  return { normal: drawPlayerCar(false, bodyColor), brake: drawPlayerCar(true, bodyColor) }
 }

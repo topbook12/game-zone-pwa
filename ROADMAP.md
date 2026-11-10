@@ -3,7 +3,7 @@
 **Principle:** every phase must stay cost-effective (client-first, free tiers, no idle servers)
 and ship *premium-feeling* features players love. One release per week is enough — quality > speed.
 
-> Current status (Day 45): Racing v2 ✅ · Quiz v2 ✅ · 2048 ✅ · Snake ✅ · Daily challenge ✅ · Achievements ✅ · PWA offline ✅ · Global leaderboard ✅ · Vercel deploy ✅ · Phase 2 content ✅ · **Phase 3 social ✅ (v2.1)**
+> Current status (Day 70): Racing v2 ✅ · Quiz v2 ✅ · 2048 ✅ · Snake ✅ · Daily challenge ✅ · Achievements ✅ · PWA offline ✅ · Global leaderboard ✅ · Vercel deploy ✅ · Phase 2 content ✅ · Phase 3 social ✅ (v2.1) · **Phase 4 monetization ✅ (v2.2)**
 
 ---
 
@@ -43,15 +43,17 @@ and ship *premium-feeling* features players love. One release per week is enough
 
 **Milestone:** ✅ players can invite friends, share scores, compete weekly; leaderboards feel alive.
 
-## Phase 4 — Monetization v1 (Day 46–70) 💰
+## Phase 4 — Monetization v1 (Day 46–70) 💰 ✅ DONE — shipped as v2.2
 > Goal: first revenue **without** hurting free play.
-- [ ] Rewarded ads via an ad network (AdMob/Unity/StartApp — pick by BD eCPM): "Watch ad → +1 nitro / +1 lifeline / double coins"
-- [ ] Coin economy: coins earned per play/ad (client ledger + server-verified ads EVENT log)
-- [ ] Cosmetics shop: car colors, trails, quiz themes (pure client skins — no server cost)
-- [ ] Daily coin cap + streak bonus (retention + controlled payout)
-- [ ] Server: add `coin_events` table (Turso), sign ad-reward callbacks
+- [x] Coin economy: coins earned per play (racing /400, quiz /20, 2048 /200, snake /50 — per-run caps) + per ad, **client ledger** (`src/lib/coins.ts`, localStorage) + **server-verified event log** (`coin_events` on Turso, claim-then-send batch sync, offline-safe queue)
+- [x] Rewarded ads: network-agnostic adapter layer (`src/lib/ads.ts`) with an **honest demo player** (labeled placeholder, 5 s countdown, close-early = no reward) — swap one constant when a real network (AdSense H5/AdMob/StartApp) is connected; placements: +2 nitro (racing menu), +1 lifeline (quiz), double coins (all 4 game-over screens), flat +25 coins
+- [x] Daily limits: 400 play coins/day + 10 rewarded ads/day, mirrored server-side (UTC caps, per-device); daily streak bonus +5%/day (max +25%)
+- [x] Cosmetics shop (`/shop` dialog via header coin pill): 6 car paints, 4 exhaust trails (incl. rainbow), 4 quiz themes — pure client skins (localStorage), prices 🪙 300–900, one free default each
+- [x] Server: `coin_events` table self-migrates on first request (no manual db:init step), signed S2S ad-reward endpoint `/api/coins/ad-reward` (HMAC-SHA256 + nonce replay guard) ready for real networks
+- [ ] Real ad network account + wiring (manual: needs AdSense H5 Games / AdMob approval) — adapter is ready
+- [ ] Real-money payouts — deliberately NOT built (honest design: coins buy cosmetics only, no cash-out claims)
 
-**Milestone:** first ৳ income with honest, player-friendly ads.
+**Milestone:** ✅ monetization rails live with honest, player-friendly demo ads — first ৳ income starts the day a real network is plugged in.
 
 ## Phase 5 — Premium & scale (Day 71–90)
 - [ ] **Premium tier (one-time or monthly):** ad-free, exclusive cars/themes, 2× daily coins

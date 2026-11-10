@@ -15,6 +15,7 @@ import {
   Award,
   Flame,
   Check,
+  Palette,
 } from 'lucide-react'
 import { Toaster } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -25,6 +26,7 @@ import { LanguageToggle } from '@/components/language-toggle'
 import { Leaderboard } from '@/components/leaderboard'
 import { AchievementsDialog } from '@/components/achievements-dialog'
 import { ProfileDialog } from '@/components/profile-dialog'
+import { ShopDialog } from '@/components/shop-dialog'
 import { PushReminderButton } from '@/components/push-reminder-button'
 import { GameErrorBoundary } from '@/components/error-boundary'
 import { RacingGame } from '@/components/racing-game'
@@ -33,6 +35,7 @@ import { G2048Game } from '@/components/g2048-game'
 import { SnakeGame } from '@/components/snake-game'
 import { useI18n } from '@/lib/i18n'
 import { useStoredNumber } from '@/lib/game-store'
+import { useCoins } from '@/lib/coins'
 import { captureReferral, getAvatar } from '@/lib/profile'
 import { todayKey, seedFromDate, readDaily, getStreak, type DailyProgress } from '@/lib/daily'
 
@@ -64,6 +67,7 @@ export function GameHub() {
   const [boardOpen, setBoardOpen] = useState(false)
   const [achOpen, setAchOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [shopOpen, setShopOpen] = useState(false)
   const [avatar, setAvatar] = useState('🎮')
   const [daily, setDaily] = useState(false) // quiz opened in daily mode
   const [dailyStamp, setDailyStamp] = useState(0) // re-mount daily status card after a run
@@ -80,6 +84,7 @@ export function GameHub() {
 
   /** Reads localStorage reactively — updates instantly when a game finishes */
   const plays = useStoredNumber('gz-plays')
+  const coins = useCoins()
   const racingBest = useStoredNumber('gz-racing-best')
   const quizBest = useStoredNumber('gz-quiz-best-gk')
   const g2048Best = useStoredNumber('gz-g2048-best')
@@ -160,6 +165,16 @@ export function GameHub() {
           </div>
           <div className="flex items-center gap-2">
             <LanguageToggle />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShopOpen(true)}
+              className="border-amber-500/40 bg-amber-500/10 px-2.5 font-bold text-amber-300 hover:bg-amber-500/20 hover:text-amber-200"
+              aria-label={t.coins.shopAria}
+            >
+              <Palette className="h-4 w-4" aria-hidden="true" />
+              <span className="tabular-nums">🪙 {coins.balance}</span>
+            </Button>
             <Button
               size="sm"
               variant="outline"
@@ -519,10 +534,11 @@ export function GameHub() {
         )}
       </main>
 
-      {/* Global leaderboard + achievements + profile dialogs */}
+      {/* Global leaderboard + achievements + profile + shop dialogs */}
       <Leaderboard open={boardOpen} onOpenChange={setBoardOpen} />
       <AchievementsDialog open={achOpen} onOpenChange={setAchOpen} />
       <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
+      <ShopDialog open={shopOpen} onOpenChange={setShopOpen} />
 
       {/* Achievement toasts */}
       <Toaster

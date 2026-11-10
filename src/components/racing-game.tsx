@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { ShareButton } from '@/components/share-button'
 import { Button } from '@/components/ui/button'
+import { RewardedAdDialog } from '@/components/rewarded-ad-dialog'
 import { RacingEngine } from '@/lib/racing/engine'
 import { SoundEngine } from '@/lib/racing/audio'
 import type { GameEvent, GamePhase, GameResult, HudData } from '@/lib/racing/types'
@@ -27,6 +28,8 @@ import { readStoredNumber, writeStoredNumber, useStoredNumber, STORAGE_KEYS } fr
 import { submitScore, type SubmitOutcome } from '@/lib/leaderboard'
 import { completeDaily } from '@/lib/daily'
 import { checkAchievements } from '@/lib/achievements'
+import { earnPlayCoins, computePlayCoins } from '@/lib/coins'
+import { getCarColor, getTrail, useCosmetics } from '@/lib/cosmetics'
 import { fmt, useI18n, getLang } from '@/lib/i18n'
 
 const RING_R = 42
@@ -82,6 +85,12 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
   const [hasTouchApi] = useState(
     () => typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0)
   )
+  /* Phase 4 monetization state */
+  const [coinGrant, setCoinGrant] = useState<{ granted: number; base: number } | null>(null)
+  const [doubled, setDoubled] = useState(false)
+  const [adOpen, setAdOpen] = useState<'nitro' | 'double' | null>(null)
+  const [nitroBonusReady, setNitroBonusReady] = useState(false)
+  const cosmeticsState = useCosmetics()
 
   const coarsePointer = useMediaQuery('(pointer: coarse)')
   const portrait = useMediaQuery('(orientation: portrait)')
@@ -156,6 +165,11 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
       }
       setResult({ ...ev.result, isBest })
       setSync(null)
+      setCoinGrant(null)
+      setDoubled(false)
+      const base = computePlayCoins('racing', ev.result.score)
+      const granted = earnPlayCoins('racing', ev.result.score)
+      setCoinGrant({ granted, base })
       submitScore('racing', ev.result.score)
         .then(setSync)
         .catch(() => setSync({ status: 'queued' }))
@@ -168,6 +182,9 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
   const handleStart = useCallback(() => {
     soundRef.current?.ensure()
     setResult(null)
+    setCoinGrant(null)
+    setDoubled(false)
+    setNitroBonusReady(false)
     engineRef.current?.startGame()
   }, [])
 
@@ -288,6 +305,19 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
       engine.shutdown()
     }
   }, [onFrame, handlePhase, handleEvent, dailySeed])
+
+  /* -------- cosmetics → engine (car paint + trail) -------- */
+  useEffect(() => {
+    const en = engineRef.current
+    if (!en) return
+    const trailItem = getTrail(cosmeticsState)
+    en.setCosmetics({
+      carColor: getCarColor(cosmeticsState),
+      trail: trailItem.color
+        ? { color: trailItem.color, glow: trailItem.glow, rainbow: trailItem.rainbow }
+        : null,
+    })
+  }, [cosmeticsState])
 
   /* -------- keyboard -------- */
   useEffect(() => {
@@ -698,18 +728,33 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
                 </div>
               </div>
 
-              <button
-                onClick={toggleTilt}
-                aria-pressed={tiltOn}
-                className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-bold transition ${
-                  tiltOn
-                    ? 'border-amber-400/60 bg-amber-500/20 text-amber-300'
-                    : 'border-white/20 bg-black/40 text-white/70 hover:bg-white/10'
-                }`}
-              >
-                <Smartphone className={`h-4 w-4 ${tiltOn ? 'animate-pulse' : ''}`} />
-                {tiltOn ? t.racing.tiltOn : t.racing.tiltOff}
-              </button>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <button
+                  onClick={toggleTilt}
+                  aria-pressed={tiltOn}
+                  className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-bold transition ${
+                    tiltOn
+                      ? 'border-amber-400/60 bg-amber-500/20 text-amber-300'
+                      : 'border-white/20 bg-black/40 text-white/70 hover:bg-white/10'
+                  }`}
+                >
+                  <Smartphone className={`h-4 w-4 ${tiltOn ? 'animate-pulse' : ''}`} />
+                  {tiltOn ? t.racing.tiltOn : t.racing.tiltOff}
+                </button>
+                {/* rewarded ad: +2 nitro for the next race */}
+                {nitroBonusReady ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/50 bg-emerald-500/15 px-4 py-1.5 text-xs font-bold text-emerald-300">
+                    {t.coins.nitroReady}
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => setAdOpen('nitro')}
+                    className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-black/40 px-4 py-1.5 text-xs font-bold text-amber-300 transition hover:bg-amber-500/15"
+                  >
+                    {t.coins.plusNitro}
+                  </button>
+                )}
+              </div>
 
               <p className="max-w-sm text-[11px] leading-relaxed text-white/50">
                 {t.racing.menuDesc}
@@ -839,6 +884,29 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
                 )}
               </div>
 
+              {/* Phase 4: coins earned this run */}
+              {coinGrant && coinGrant.granted > 0 && (
+                <div className="flex flex-col items-center gap-2">
+                  <span className="text-xs font-black tracking-wide text-amber-300">
+                    🪙 {fmt(t.coins.earned, { n: coinGrant.granted })}
+                  </span>
+                  {!doubled ? (
+                    <Button
+                      onClick={() => setAdOpen('double')}
+                      variant="outline"
+                      className="h-9 border-amber-500/40 bg-black/40 px-4 text-xs font-bold text-amber-300 hover:bg-amber-500/15"
+                    >
+                      {t.coins.doubleIt}
+                    </Button>
+                  ) : (
+                    <span className="text-xs font-bold text-emerald-300">{t.coins.doubled}</span>
+                  )}
+                </div>
+              )}
+              {coinGrant && coinGrant.granted === 0 && coinGrant.base > 0 && (
+                <div className="text-[11px] font-semibold text-zinc-500">{t.coins.dailyCap}</div>
+              )}
+
               <div className="flex w-full flex-col gap-2">
                 <Button
                   onClick={handleStart}
@@ -871,6 +939,24 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ---------------- rewarded ad player (demo) ---------------- */}
+      <RewardedAdDialog
+        open={adOpen !== null}
+        onOpenChange={(o) => {
+          if (!o) setAdOpen(null)
+        }}
+        placement={adOpen ?? 'coins'}
+        doubleAmount={coinGrant?.granted ?? 0}
+        onCompleted={() => {
+          if (adOpen === 'nitro') {
+            engineRef.current?.armNitroBonus()
+            setNitroBonusReady(true)
+          } else if (adOpen === 'double') {
+            setDoubled(true)
+          }
+        }}
+      />
     </div>
   )
 }

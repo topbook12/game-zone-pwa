@@ -4,10 +4,12 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from '
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ChevronLeft, RotateCcw, Undo2 } from 'lucide-react'
+import { RewardedAdDialog } from '@/components/rewarded-ad-dialog'
 import { ShareButton } from '@/components/share-button'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { checkAchievements } from '@/lib/achievements'
+import { computePlayCoins, earnPlayCoins } from '@/lib/coins'
 import { readStoredNumber, STORAGE_KEYS, useStoredNumber, writeStoredNumber } from '@/lib/game-store'
 import { submitScore, type SubmitOutcome } from '@/lib/leaderboard'
 import { fmt, getLang, useI18n } from '@/lib/i18n'
@@ -257,6 +259,10 @@ export function G2048Game({ onExit }: G2048GameProps) {
   const historyRef = useRef<Snapshot | null>(null)
   const [sync, setSync] = useState<SubmitOutcome | null>(null)
   const [flash, setFlash] = useState<{ n: number; k: number } | null>(null)
+  /* Phase 4 monetization: play-coins on true game over + double-coins rewarded ad. */
+  const [coinGrant, setCoinGrant] = useState<{ granted: number; base: number } | null>(null)
+  const [doubled, setDoubled] = useState(false)
+  const [adOpen, setAdOpen] = useState(false)
 
   const wonRef = useRef(false)
   const finishedRef = useRef(false)
@@ -326,6 +332,12 @@ export function G2048Game({ onExit }: G2048GameProps) {
     } else if (!hasMoves(board)) {
       applyPhase('lost')
       finishRun()
+      // Play coins — the run-end transition fires once per run (true game over
+      // only; the 2048 win screen never awards coins), so this is a safe one-shot.
+      const base = computePlayCoins('g2048', scoreRef.current)
+      const granted = earnPlayCoins('g2048', scoreRef.current)
+      setCoinGrant({ granted, base })
+      setDoubled(false)
     }
   }, [applyPhase, finishRun])
 
@@ -389,6 +401,8 @@ export function G2048Game({ onExit }: G2048GameProps) {
     setHistory(null)
     setSync(null)
     setFlash(null)
+    setCoinGrant(null)
+    setDoubled(false)
     applyPhase('playing')
   }, [applyPhase])
 
@@ -692,6 +706,33 @@ export function G2048Game({ onExit }: G2048GameProps) {
                   {sync !== null && (
                     <div className="mt-3 text-[11px] font-semibold tracking-wide">{syncLine}</div>
                   )}
+                  {/* Play-coins row: earned amount + double-coins rewarded ad offer */}
+                  {coinGrant !== null && coinGrant.granted > 0 && (
+                    <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                      <span className="text-xs font-bold text-amber-300">
+                        🪙 {fmt(t.coins.earned, { n: coinGrant.granted })}
+                      </span>
+                      {doubled ? (
+                        <div
+                          aria-live="polite"
+                          className="flex h-9 items-center justify-center rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 text-xs font-bold text-emerald-300"
+                        >
+                          {t.coins.doubled}
+                        </div>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          onClick={() => setAdOpen(true)}
+                          className="h-9 border-amber-500/40 bg-zinc-900/60 px-3 text-xs font-bold text-amber-300 hover:bg-amber-500/10 hover:text-amber-200"
+                        >
+                          {t.coins.doubleIt}
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                  {coinGrant !== null && coinGrant.granted === 0 && coinGrant.base > 0 && (
+                    <div className="mt-3 text-xs text-zinc-500">{t.coins.dailyCap}</div>
+                  )}
                   <Button
                     onClick={handleNewGame}
                     className="mt-4 w-full bg-amber-500 font-bold text-stone-950 hover:bg-amber-400"
@@ -737,6 +778,15 @@ export function G2048Game({ onExit }: G2048GameProps) {
           ))}
         </div>
       </div>
+
+      {/* Double-coins rewarded ad (one instance, controlled by state) */}
+      <RewardedAdDialog
+        open={adOpen}
+        onOpenChange={setAdOpen}
+        placement="double"
+        doubleAmount={coinGrant?.granted ?? 0}
+        onCompleted={() => setDoubled(true)}
+      />
     </div>
   )
 }

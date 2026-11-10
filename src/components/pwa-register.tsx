@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { RefreshCw, WifiOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { initLeaderboardSync } from '@/lib/leaderboard'
+import { initCoinSync } from '@/lib/coins'
 import { useI18n } from '@/lib/i18n'
 
 /**
@@ -37,8 +38,15 @@ export function PwaRegister() {
   const waitingRef = useRef<ServiceWorker | null>(null)
   const updateRequestedRef = useRef(false)
 
-  /* Flush queued scores on load + whenever the device comes back online */
-  useEffect(() => initLeaderboardSync(), [])
+  /* Flush queued scores + coin ledger events on load + whenever back online */
+  useEffect(() => {
+    const offScores = initLeaderboardSync()
+    const offCoins = initCoinSync()
+    return () => {
+      offScores()
+      offCoins()
+    }
+  }, [])
 
   /* Service worker registration + update detection */
   useEffect(() => {

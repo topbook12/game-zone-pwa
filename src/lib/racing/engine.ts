@@ -3,7 +3,7 @@
  * Fixed-timestep simulation + canvas projection renderer with curves, hills,
  * traffic AI, checkpoints, nitro, particles, camera shake and a parallax sunset.
  */
-import type { EngineOptions, GamePhase, HudData, InputState } from './types'
+import type { CarCosmetics, EngineOptions, GamePhase, HudData, InputState } from './types'
 import type { SoundEngine } from './audio'
 import { mulberry32 } from '@/lib/daily'
 import {
@@ -200,6 +200,11 @@ export class RacingEngine {
   totalDist = 0
   autoGas = false
   input: InputState = { left: false, right: false, gas: false, brake: false, nitro: false, steerAnalog: 0 }
+  /** +0.6 nitro armed from a rewarded ad — consumed at the next startGame. */
+  private pendingNitroBonus = 0
+  /** Equipped cosmetics (Phase 4): paint color + exhaust trail. */
+  private carColor = '#d92328'
+  private trail: CarCosmetics['trail'] = null
 
   private nextCp = CP_INTERVAL
   private countdownT = 0
@@ -266,7 +271,7 @@ export class RacingEngine {
 
   boot(): void {
     this.assets = createSpriteAssets()
-    this.playerImgs = createPlayerCar()
+    this.playerImgs = createPlayerCar(this.carColor)
     this.buildWorld(1)
     this.resize()
     this.toMenu()
@@ -278,6 +283,20 @@ export class RacingEngine {
     this.buildTrack()
     this.decorate()
     this.seedCars()
+  }
+
+  /** Apply cosmetics: repaint the player car + set the exhaust trail. */
+  setCosmetics(spec: CarCosmetics): void {
+    if (spec.carColor && spec.carColor !== this.carColor) {
+      this.carColor = spec.carColor
+      if (this.playerImgs) this.playerImgs = createPlayerCar(this.carColor)
+    }
+    this.trail = spec.trail ?? null
+  }
+
+  /** Arm the rewarded-ad nitro bonus (applied at the next race start). */
+  armNitroBonus(): void {
+    this.pendingNitroBonus = 0.6
   }
 
   /** Set the daily-challenge seed (or null for a fresh random circuit each run). */
@@ -318,6 +337,10 @@ export class RacingEngine {
     const seed = this.dailySeed ?? ((Math.random() * 0xffffffff) >>> 0)
     this.buildWorld(seed)
     this.resetRun()
+    if (this.pendingNitroBonus > 0) {
+      this.nitro = Math.min(1, this.nitro + this.pendingNitroBonus)
+      this.pendingNitroBonus = 0
+    }
     this.phase = 'countdown'
     this.countdownT = 3.0
     this.lastCount = -1
@@ -510,6 +533,7 @@ export class RacingEngine {
       if (this.speed > OFF_LIMIT) this.speed += OFF_DECEL * dt
       this.spawnDust()
     }
+    this.spawnTrail()
     this.playerX = clamp(this.playerX, -2.4, 2.4)
 
     // roadside collisions
@@ -674,6 +698,30 @@ export class RacingEngine {
         size: 3 + Math.random() * 5,
         color: Math.random() < 0.5 ? '#d7b487' : '#b98d5f',
         grav: 160,
+      })
+    }
+  }
+
+  /** Equipped cosmetic trail — streams from the exhausts while driving. */
+  private spawnTrail(): void {
+    const trail = this.trail
+    if (!trail || this.speed < MAX_SPEED * 0.25) return
+    const carW = this.playerCarW()
+    const by = this.H - 16
+    for (const side of [-1, 1]) {
+      if (Math.random() > 0.75) continue
+      this.particles.push({
+        x: this.W / 2 + side * carW * 0.3,
+        y: by,
+        vx: side * (10 + Math.random() * 30),
+        vy: 50 + Math.random() * 60,
+        life: 0.3 + Math.random() * 0.3,
+        max: 0.6,
+        size: 2 + Math.random() * 3.5,
+        color: trail.rainbow
+          ? `hsl(${Math.floor((this.timeAbs * 220 + (side > 0 ? 40 : 0)) % 360)}, 95%, 62%)`
+          : trail.color,
+        grav: -40,
       })
     }
   }

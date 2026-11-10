@@ -32,9 +32,11 @@ import {
   Volume2,
   VolumeX,
 } from 'lucide-react'
+import { RewardedAdDialog } from '@/components/rewarded-ad-dialog'
 import { ShareButton } from '@/components/share-button'
 import { Button } from '@/components/ui/button'
 import { checkAchievements } from '@/lib/achievements'
+import { computePlayCoins, earnPlayCoins } from '@/lib/coins'
 import { readStoredNumber, STORAGE_KEYS, useStoredNumber, writeStoredNumber } from '@/lib/game-store'
 import { submitScore, type SubmitOutcome } from '@/lib/leaderboard'
 import { fmt, getLang, useI18n } from '@/lib/i18n'
@@ -145,6 +147,10 @@ export function SnakeGame({ onExit }: SnakeGameProps) {
   const [speedLabel, setSpeedLabel] = useState(BASE_STEPS.toFixed(1))
   const [result, setResult] = useState<{ score: number; record: boolean } | null>(null)
   const [sync, setSync] = useState<SubmitOutcome | null>(null)
+  /* Phase 4 monetization: play-coins on game over + double-coins rewarded ad. */
+  const [coinGrant, setCoinGrant] = useState<{ granted: number; base: number } | null>(null)
+  const [doubled, setDoubled] = useState(false)
+  const [adOpen, setAdOpen] = useState(false)
   const [muted, setMuted] = useState(false)
   const [hasTouch] = useState(
     () => typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0)
@@ -257,6 +263,8 @@ export function SnakeGame({ onExit }: SnakeGameProps) {
     setSpeedLabel(BASE_STEPS.toFixed(1))
     setResult(null)
     setSync(null)
+    setCoinGrant(null)
+    setDoubled(false)
     handlePhase('playing')
   }, [ensureAudio, handlePhase, resetBoard])
 
@@ -268,6 +276,8 @@ export function SnakeGame({ onExit }: SnakeGameProps) {
     setSpeedLabel(BASE_STEPS.toFixed(1))
     setResult(null)
     setSync(null)
+    setCoinGrant(null)
+    setDoubled(false)
     handlePhase('menu')
   }, [handlePhase, resetBoard])
 
@@ -363,6 +373,11 @@ export function SnakeGame({ onExit }: SnakeGameProps) {
       deathAtRef.current = now
       beep(220, 60, 300, 'sawtooth')
       commitRun(scoreRef.current)
+      // Play coins — the true game-over transition (guarded by dyingRef), so
+      // this grants exactly once per run; mid-run exits award no coins.
+      const base = computePlayCoins('snake', scoreRef.current)
+      const granted = earnPlayCoins('snake', scoreRef.current)
+      setCoinGrant({ granted, base })
       setResult({ score: scoreRef.current, record: recordRef.current })
       timerRef.current = window.setTimeout(() => {
         timerRef.current = null
@@ -847,6 +862,33 @@ export function SnakeGame({ onExit }: SnakeGameProps) {
               {sync?.status === 'offline' && <span className="text-amber-300">{t.common.syncOffline}</span>}
               {sync?.status === 'rejected' && <span className="text-rose-400">{t.common.syncRejected}</span>}
             </div>
+            {/* Play-coins row: earned amount + double-coins rewarded ad offer */}
+            {coinGrant !== null && coinGrant.granted > 0 && (
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <span className="text-xs font-bold text-amber-300">
+                  🪙 {fmt(t.coins.earned, { n: coinGrant.granted })}
+                </span>
+                {doubled ? (
+                  <div
+                    aria-live="polite"
+                    className="flex h-9 items-center justify-center rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 text-xs font-bold text-emerald-300"
+                  >
+                    {t.coins.doubled}
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={() => setAdOpen(true)}
+                    className="h-9 border-amber-500/40 bg-black/40 px-3 text-xs font-bold text-amber-300 hover:bg-amber-500/10 hover:text-amber-200"
+                  >
+                    {t.coins.doubleIt}
+                  </Button>
+                )}
+              </div>
+            )}
+            {coinGrant !== null && coinGrant.granted === 0 && coinGrant.base > 0 && (
+              <div className="text-xs text-zinc-500">{t.coins.dailyCap}</div>
+            )}
             <div className="mt-1 flex w-full max-w-[220px] flex-col gap-2">
               <Button
                 onClick={startGame}
@@ -923,6 +965,15 @@ export function SnakeGame({ onExit }: SnakeGameProps) {
           </button>
         </div>
       )}
+
+      {/* Double-coins rewarded ad (one instance, controlled by state) */}
+      <RewardedAdDialog
+        open={adOpen}
+        onOpenChange={setAdOpen}
+        placement="double"
+        doubleAmount={coinGrant?.granted ?? 0}
+        onCompleted={() => setDoubled(true)}
+      />
     </div>
   )
 }
