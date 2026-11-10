@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Gamepad2,
@@ -12,39 +12,71 @@ import {
   Sparkles,
   Lock,
   Gauge,
+  Award,
+  Flame,
+  Check,
 } from 'lucide-react'
+import { Toaster } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { InstallPrompt } from '@/components/install-prompt'
 import { LanguageToggle } from '@/components/language-toggle'
 import { Leaderboard } from '@/components/leaderboard'
+import { AchievementsDialog } from '@/components/achievements-dialog'
 import { GameErrorBoundary } from '@/components/error-boundary'
 import { RacingGame } from '@/components/racing-game'
 import { QuizGame } from '@/components/quiz-game'
+import { G2048Game } from '@/components/g2048-game'
+import { SnakeGame } from '@/components/snake-game'
 import { useI18n } from '@/lib/i18n'
 import { useStoredNumber } from '@/lib/game-store'
+import { todayKey, seedFromDate, readDaily, getStreak, type DailyProgress } from '@/lib/daily'
 
-type View = 'hub' | 'racing' | 'quiz'
+type View = 'hub' | 'racing' | 'quiz' | 'g2048' | 'snake'
 
 const COMING_SOON = [
-  { emoji: '🎯', name: '2048' },
-  { emoji: '🐍', name: 'Snake' },
   { emoji: '🎲', name: 'Ludo' },
+  { emoji: '🧩', name: 'Car Parking' },
+  { emoji: '💎', name: 'Match 3' },
 ]
+
+/** Daily challenge status — re-read whenever refreshKey changes (hydration safe). */
+function useDailyStatus(refreshKey: number): { progress: DailyProgress | null; streak: number } {
+  const [state, setState] = useState<{ progress: DailyProgress | null; streak: number }>({
+    progress: null,
+    streak: 0,
+  })
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      setState({ progress: readDaily(), streak: getStreak() })
+    }, 0)
+    return () => window.clearTimeout(id)
+  }, [refreshKey])
+  return state
+}
 
 export function GameHub() {
   const [view, setView] = useState<View>('hub')
   const [boardOpen, setBoardOpen] = useState(false)
-  const { t } = useI18n()
+  const [achOpen, setAchOpen] = useState(false)
+  const [daily, setDaily] = useState(false) // quiz opened in daily mode
+  const [dailyStamp, setDailyStamp] = useState(0) // re-mount daily status card after a run
+  const { t, lang } = useI18n()
 
   /** Reads localStorage reactively — updates instantly when a game finishes */
   const plays = useStoredNumber('gz-plays')
   const racingBest = useStoredNumber('gz-racing-best')
   const quizBest = useStoredNumber('gz-quiz-best-gk')
+  const g2048Best = useStoredNumber('gz-g2048-best')
+  const snakeBest = useStoredNumber('gz-snake-best')
+  const { progress: dailyProgress, streak } = useDailyStatus(dailyStamp)
 
   const openRacing = () => setView('racing')
-  const openQuiz = () => setView('quiz')
+  const openQuiz = (asDaily = false) => {
+    setDaily(asDaily)
+    setView('quiz')
+  }
 
   const games = [
     {
@@ -52,7 +84,7 @@ export function GameHub() {
       title: t.hub.racingTitle,
       desc: t.hub.racingDesc,
       emoji: '🏎️',
-      banner: '/images/racing-banner.png',
+      banner: '/images/racing-banner.jpg',
       best: racingBest,
       accent: 'hover:border-amber-500/60',
       aria: t.hub.racingAria,
@@ -63,13 +95,40 @@ export function GameHub() {
       title: t.hub.quizTitle,
       desc: t.hub.quizDesc,
       emoji: '🧠',
-      banner: '/images/quiz-banner.png',
+      banner: '/images/quiz-banner.jpg',
       best: quizBest,
       accent: 'hover:border-emerald-500/60',
       aria: t.hub.quizAria,
-      onClick: openQuiz,
+      onClick: () => openQuiz(false),
+    },
+    {
+      id: 'g2048',
+      title: t.hub.g2048Title,
+      desc: t.hub.g2048Desc,
+      emoji: '🎯',
+      banner: '/images/2048-banner.jpg',
+      best: g2048Best,
+      accent: 'hover:border-orange-500/60',
+      aria: t.hub.g2048Aria,
+      onClick: () => setView('g2048'),
+    },
+    {
+      id: 'snake',
+      title: t.hub.snakeTitle,
+      desc: t.hub.snakeDesc,
+      emoji: '🐍',
+      banner: '/images/snake-banner.jpg',
+      best: snakeBest,
+      accent: 'hover:border-teal-500/60',
+      aria: t.hub.snakeAria,
+      onClick: () => setView('snake'),
     },
   ]
+
+  /** Today's date label like "10 Nov" for the daily circuit. */
+  const now = new Date()
+  const dailyDateLabel = now.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })
+  const dailySeed = seedFromDate(todayKey())
 
   return (
     <div className="flex min-h-dvh flex-col bg-stone-950 text-zinc-100">
@@ -87,6 +146,16 @@ export function GameHub() {
           </div>
           <div className="flex items-center gap-2">
             <LanguageToggle />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setAchOpen(true)}
+              className="border-zinc-700 bg-zinc-900 text-teal-300 hover:bg-zinc-800 hover:text-teal-200"
+              aria-label={t.hub.achievementsAria}
+            >
+              <Award className="h-4 w-4" />
+              <span className="hidden sm:inline">{t.ach.title}</span>
+            </Button>
             <Button
               size="sm"
               variant="outline"
@@ -120,7 +189,7 @@ export function GameHub() {
                   <div
                     className="pointer-events-none absolute inset-0 opacity-25"
                     style={{
-                      backgroundImage: 'url(/images/racing-banner.png)',
+                      backgroundImage: 'url(/images/racing-banner.jpg)',
                       backgroundSize: 'cover',
                       backgroundPosition: 'center',
                     }}
@@ -147,9 +216,83 @@ export function GameHub() {
                         {t.hub.chipQuiz}
                       </span>
                       <span className="rounded-full bg-zinc-800/80 px-3 py-1 text-zinc-300">
+                        {t.hub.chip2048}
+                      </span>
+                      <span className="rounded-full bg-zinc-800/80 px-3 py-1 text-zinc-300">
+                        {t.hub.chipSnake}
+                      </span>
+                      <span className="rounded-full bg-zinc-800/80 px-3 py-1 text-zinc-300">
                         {t.hub.chipOffline}
                       </span>
                     </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Daily challenge */}
+              <Card className="border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-zinc-900/60 to-zinc-900/80">
+                <CardContent className="flex flex-col gap-3 p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/20">
+                        <Flame className="h-5 w-5 animate-pulse text-amber-400" aria-hidden="true" />
+                      </div>
+                      <div>
+                        <h3 className="flex items-center gap-2 text-sm font-black text-amber-300">
+                          {t.daily.title}
+                          <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[9px] font-bold tracking-widest text-amber-300">
+                            {t.daily.todayBadge}
+                          </span>
+                        </h3>
+                        <p className="text-[11px] leading-tight text-zinc-400">{t.daily.desc}</p>
+                      </div>
+                    </div>
+                    {streak > 0 && (
+                      <div className="shrink-0 text-right">
+                        <div className="text-lg font-black text-orange-300">🔥 {streak}</div>
+                        <div className="text-[9px] font-semibold text-zinc-500">{t.daily.streakLabel}</div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <Button
+                      onClick={() => openQuiz(true)}
+                      variant={dailyProgress?.quizDone ? 'outline' : 'default'}
+                      className={`h-11 justify-between gap-2 ${
+                        dailyProgress?.quizDone
+                          ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20'
+                          : 'bg-amber-500 font-bold text-stone-950 hover:bg-amber-400'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2 text-left text-xs">
+                        <Brain className="h-4 w-4 shrink-0" />
+                        {t.daily.taskQuiz}
+                      </span>
+                      {dailyProgress?.quizDone ? (
+                        <Check className="h-4 w-4 shrink-0" />
+                      ) : (
+                        <Play className="h-3.5 w-3.5 shrink-0" />
+                      )}
+                    </Button>
+                    <Button
+                      onClick={openRacing}
+                      variant={dailyProgress?.racingDone ? 'outline' : 'default'}
+                      className={`h-11 justify-between gap-2 ${
+                        dailyProgress?.racingDone
+                          ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20'
+                          : 'bg-amber-500 font-bold text-stone-950 hover:bg-amber-400'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2 text-left text-xs">
+                        <Gauge className="h-4 w-4 shrink-0" />
+                        {t.daily.taskRacing}
+                      </span>
+                      {dailyProgress?.racingDone ? (
+                        <Check className="h-4 w-4 shrink-0" />
+                      ) : (
+                        <Play className="h-3.5 w-3.5 shrink-0" />
+                      )}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -290,7 +433,41 @@ export function GameHub() {
               transition={{ duration: 0.22 }}
             >
               <GameErrorBoundary label={t.hub.quizTitle}>
-                <QuizGame onExit={() => setView('hub')} />
+                <QuizGame
+                  onExit={() => {
+                    setView('hub')
+                    setDailyStamp((s) => s + 1)
+                  }}
+                  daily={daily}
+                />
+              </GameErrorBoundary>
+            </motion.div>
+          )}
+
+          {view === 'g2048' && (
+            <motion.div
+              key="g2048"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.22 }}
+            >
+              <GameErrorBoundary label={t.hub.g2048Title}>
+                <G2048Game onExit={() => setView('hub')} />
+              </GameErrorBoundary>
+            </motion.div>
+          )}
+
+          {view === 'snake' && (
+            <motion.div
+              key="snake"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.22 }}
+            >
+              <GameErrorBoundary label={t.hub.snakeTitle}>
+                <SnakeGame onExit={() => setView('hub')} />
               </GameErrorBoundary>
             </motion.div>
           )}
@@ -299,13 +476,33 @@ export function GameHub() {
         {/* Racing is a full-screen overlay — keep it OUTSIDE animated wrappers so `fixed` works */}
         {view === 'racing' && (
           <GameErrorBoundary label={t.hub.racingTitle}>
-            <RacingGame onExit={() => setView('hub')} />
+            <RacingGame
+              onExit={() => {
+                setView('hub')
+                setDailyStamp((s) => s + 1)
+              }}
+              dailySeed={dailySeed}
+              dailyDate={dailyDateLabel}
+            />
           </GameErrorBoundary>
         )}
       </main>
 
-      {/* Global leaderboard dialog */}
+      {/* Global leaderboard + achievements dialogs */}
       <Leaderboard open={boardOpen} onOpenChange={setBoardOpen} />
+      <AchievementsDialog open={achOpen} onOpenChange={setAchOpen} />
+
+      {/* Achievement toasts */}
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          style: {
+            background: '#1c1917',
+            border: '1px solid #44403c',
+            color: '#fafaf9',
+          },
+        }}
+      />
 
       {/* Sticky footer */}
       <footer className="mt-auto border-t border-zinc-800/80 bg-stone-950/95">

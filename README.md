@@ -4,11 +4,12 @@ A **cost-effective, offline-first game platform** (PWA) built with Next.js 16 + 
 Install it on Android from the browser — it runs **fully offline** after the first load,
 scores are saved on-device, and a tiny global leaderboard syncs through a serverless API.
 
-**Games included:** 🏎️ Turbo Rush (pseudo-3D racing) · 🧠 Brain Quiz (6 categories)
+**Games included:** 🏎️ Turbo Rush (pseudo-3D racing, seeded daily circuits) · 🧠 Brain Quiz (9 categories, 90+ questions) · 🎯 2048 Fusion · 🐍 Snake Neon
 
-**v1.3 highlights:** EN/বাংলা language toggle · offline score queue (auto-sync on reconnect) ·
-"New version" update card (SW skipWaiting) · offline banner · crash-safe game boundaries ·
-cookieless page-view analytics (Vercel free tier).
+**v2.0 highlights (Day 11–25):** 2 new games (2048 + Snake Neon) · Daily Challenge (date-seeded quiz + circuit, streaks) ·
+14 achievements with progress + toasts · racing mobile overhaul (hold-left/right-half steering, optional tilt steering, bigger pads) ·
+racing premium visuals (procedural tracks, skyline/stars/birds, headlight cone, tail lights, nitro tint) ·
+EN/বাংলা toggle · offline score queue · SW update card · compressed assets (icon-512 250→66 KB, banners < 55 KB).
 
 ---
 

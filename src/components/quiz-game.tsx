@@ -12,15 +12,21 @@ import {
   RotateCcw,
   ListChecks,
   Star,
+  Flame,
+  Check,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { fmt, useI18n } from '@/lib/i18n'
+import { fmt, useI18n, getLang } from '@/lib/i18n'
 import { readStoredNumber, useStoredNumber, writeStoredNumber, STORAGE_KEYS } from '@/lib/game-store'
 import { submitScore, type SubmitOutcome } from '@/lib/leaderboard'
+import { completeDaily, todaySeed } from '@/lib/daily'
+import { checkAchievements } from '@/lib/achievements'
 import {
   QUIZ_CATEGORIES,
+  QUIZ_QUESTIONS,
   pickQuizQuestions,
+  pickDailyQuizQuestions,
   type QuizCategoryId,
   type QuizQuestion,
 } from '@/lib/quiz-questions'
@@ -31,6 +37,8 @@ const QUESTION_TIME = 15
 
 interface QuizGameProps {
   onExit: () => void
+  /** When true, the seeded daily challenge auto-starts. */
+  daily?: boolean
 }
 
 interface ResultState {
@@ -40,10 +48,11 @@ interface ResultState {
   isBest: boolean
 }
 
-export function QuizGame({ onExit }: QuizGameProps) {
+export function QuizGame({ onExit, daily }: QuizGameProps) {
   const { t } = useI18n()
   const [phase, setPhase] = useState<Phase>('select')
   const [category, setCategory] = useState<QuizCategoryId>('gk')
+  const [mode, setMode] = useState<'normal' | 'daily'>('normal')
   const [questions, setQuestions] = useState<QuizQuestion[]>([])
   const [qIndex, setQIndex] = useState(0)
   const [answered, setAnswered] = useState<number | null>(null)
@@ -57,11 +66,12 @@ export function QuizGame({ onExit }: QuizGameProps) {
   /** Best score — reactive localStorage store (hydration safe) */
   const best = useStoredNumber(STORAGE_KEYS.quizBest(category))
 
-  /* Start quiz */
+  /* Start quiz (random per category) */
   const startQuiz = useCallback((cat: QuizCategoryId) => {
     const picked = pickQuizQuestions(cat, 10)
     setQuestions(picked)
     setCategory(cat)
+    setMode('normal')
     setQIndex(0)
     setAnswered(null)
     setScore(0)
@@ -72,6 +82,30 @@ export function QuizGame({ onExit }: QuizGameProps) {
     setSync(null)
     setPhase('play')
   }, [])
+
+  /* Start the seeded daily challenge — same 10 questions for everyone today */
+  const startDaily = useCallback(() => {
+    const picked = pickDailyQuizQuestions(todaySeed(), 10)
+    setQuestions(picked)
+    setCategory('mixed')
+    setMode('daily')
+    setQIndex(0)
+    setAnswered(null)
+    setScore(0)
+    setCorrectCount(0)
+    setTimeLeft(QUESTION_TIME)
+    setGained(0)
+    setResult(null)
+    setSync(null)
+    setPhase('play')
+  }, [])
+
+  /* Auto-start when opened as the daily challenge */
+  useEffect(() => {
+    if (!daily) return
+    const id = setTimeout(() => startDaily(), 0)
+    return () => clearTimeout(id)
+  }, [daily, startDaily])
 
   /* Answer */
   const handleAnswer = useCallback(
@@ -116,12 +150,18 @@ export function QuizGame({ onExit }: QuizGameProps) {
     const id = setTimeout(() => {
       if (qIndex + 1 >= questions.length) {
         const total = questions.length
-        const bestKey = STORAGE_KEYS.quizBest(category)
-        const prevBest = readStoredNumber(bestKey, 0)
-        const isBest = score > prevBest
-        if (isBest) writeStoredNumber(bestKey, score)
+        if (mode === 'normal') {
+          const bestKey = STORAGE_KEYS.quizBest(category)
+          const prevBest = readStoredNumber(bestKey, 0)
+          const isBest = score > prevBest
+          if (isBest) writeStoredNumber(bestKey, score)
+          setResult({ score, correct: correctCount, total, isBest })
+        } else {
+          completeDaily('quiz', score)
+          checkAchievements(getLang())
+          setResult({ score, correct: correctCount, total, isBest: false })
+        }
         writeStoredNumber(STORAGE_KEYS.plays, readStoredNumber(STORAGE_KEYS.plays, 0) + 1)
-        setResult({ score, correct: correctCount, total, isBest })
         setSync(null)
         submitScore('quiz', score)
           .then(setSync)
@@ -135,7 +175,7 @@ export function QuizGame({ onExit }: QuizGameProps) {
       }
     }, 1400)
     return () => clearTimeout(id)
-  }, [answered, phase, qIndex, questions.length, category, score, correctCount])
+  }, [answered, phase, qIndex, questions.length, category, score, correctCount, mode])
 
   const current = questions[qIndex]
   const timePct = Math.max(0, (timeLeft / QUESTION_TIME) * 100)
@@ -156,9 +196,12 @@ export function QuizGame({ onExit }: QuizGameProps) {
           </Button>
           <div className="flex items-center gap-1.5 text-sm text-zinc-400">
             <Brain className="h-4 w-4 text-amber-400" />
-            {t.quiz.bankLabel} <span className="font-semibold text-amber-300">60+</span>
+            {t.quiz.bankLabel} <span className="font-semibold text-amber-300">{QUIZ_QUESTIONS.length}+</span>
           </div>
         </div>
+
+        {/* Daily challenge card */}
+        <DailyQuizCard onStart={startDaily} />
 
         <div className="text-center">
           <h2 className="text-2xl font-extrabold text-amber-300">🧠 {t.hub.quizTitle}</h2>
@@ -262,9 +305,15 @@ export function QuizGame({ onExit }: QuizGameProps) {
           )}
         </div>
 
+        {mode === 'daily' && (
+          <div className="rounded-full border border-amber-400/50 bg-amber-500/15 px-4 py-1.5 text-sm font-semibold text-amber-300">
+            {t.quiz.dailyDone}
+          </div>
+        )}
+
         <div className="flex flex-wrap justify-center gap-2">
           <Button
-            onClick={() => startQuiz(category)}
+            onClick={() => (mode === 'daily' ? startDaily() : startQuiz(category))}
             className="bg-amber-500 font-bold text-stone-950 hover:bg-amber-400"
           >
             <RotateCcw className="h-4 w-4" />
@@ -332,6 +381,14 @@ export function QuizGame({ onExit }: QuizGameProps) {
           {Math.ceil(timeLeft)}s
         </span>
       </div>
+
+      {/* playing badge */}
+      {mode === 'daily' && (
+        <div className="mx-auto flex w-fit items-center gap-1.5 rounded-full border border-amber-400/50 bg-amber-500/15 px-3 py-1 text-[11px] font-black tracking-[0.2em] text-amber-300">
+          <Flame className="h-3.5 w-3.5 animate-pulse" />
+          {t.quiz.dailyBadge}
+        </div>
+      )}
 
       {/* question card */}
       <div className="rounded-2xl border border-zinc-700/70 bg-zinc-900/90 p-5 shadow-xl">
@@ -410,5 +467,68 @@ function BestScoreBadge({ catId }: { catId: QuizCategoryId }) {
     <span className="mt-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] text-amber-300">
       {t.quiz.bestBadge} {best}
     </span>
+  )
+}
+
+/** Daily challenge entry card on the quiz select screen. */
+function DailyQuizCard({ onStart }: { onStart: () => void }) {
+  const { t } = useI18n()
+  const [progress, setProgress] = useState<{ quizDone: boolean } | null>(null)
+  const [streak, setStreak] = useState(0)
+
+  useEffect(() => {
+    const id = setTimeout(() => {
+      // read after mount (hydration-safe pattern)
+      void import('@/lib/daily').then(({ readDaily, getStreak }) => {
+        const p = readDaily()
+        setProgress({ quizDone: p.quizDone })
+        setStreak(getStreak())
+      })
+    }, 0)
+    return () => clearTimeout(id)
+  }, [])
+
+  const done = progress?.quizDone === true
+
+  return (
+    <button
+      onClick={onStart}
+      className={`mx-auto flex w-full max-w-[560px] items-center justify-between gap-3 rounded-2xl border-2 bg-gradient-to-r from-amber-500/15 via-zinc-900 to-zinc-900 p-4 text-left transition-all hover:border-amber-400 hover:from-amber-500/25 active:scale-[0.99] ${
+        done ? 'border-emerald-500/40' : 'border-amber-500/50'
+      }`}
+      aria-label={t.daily.title}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+            done ? 'bg-emerald-500/20' : 'bg-amber-500/20'
+          }`}
+        >
+          {done ? (
+            <Check className="h-6 w-6 text-emerald-400" />
+          ) : (
+            <Flame className="h-6 w-6 text-amber-400" />
+          )}
+        </div>
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-black text-amber-300">{t.daily.title}</span>
+            {streak > 0 && (
+              <span className="rounded-full bg-orange-500/20 px-2 py-0.5 text-[10px] font-bold text-orange-300">
+                🔥 {fmt(streak === 1 ? t.daily.streakOne : t.daily.streakDays, { n: streak })}
+              </span>
+            )}
+          </div>
+          <p className="mt-0.5 text-[11px] leading-tight text-zinc-400">{t.daily.taskQuiz}</p>
+        </div>
+      </div>
+      <span
+        className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-black ${
+          done ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500 text-stone-950'
+        }`}
+      >
+        {done ? t.daily.done : t.daily.play}
+      </span>
+    </button>
   )
 }

@@ -1,5 +1,5 @@
 /* Game Zone — Service Worker (PWA offline support) */
-const CACHE_NAME = 'game-zone-v6';
+const CACHE_NAME = 'game-zone-v7';
 const CORE_ASSETS = [
   '/',
   '/manifest.json',
@@ -7,17 +7,21 @@ const CORE_ASSETS = [
   '/icons/icon-512.png',
   '/icons/apple-touch-icon.png',
   '/icons/favicon-64.png',
-  '/images/racing-banner.png',
-  '/images/quiz-banner.png',
+  '/images/racing-banner.jpg',
+  '/images/quiz-banner.jpg',
+  '/images/2048-banner.jpg',
+  '/images/snake-banner.jpg',
 ];
 
-// Install: cache core assets (no skipWaiting here — the app shows a
-// "new version" card and calls SKIP_WAITING so the player stays in control)
+// Install: cache core assets one-by-one (allSettled → a missing/failed asset
+// can never break the whole SW install)
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(CACHE_NAME)
-      .then((cache) => cache.addAll(CORE_ASSETS))
+      .then((cache) =>
+        Promise.allSettled(CORE_ASSETS.map((a) => cache.add(a)))
+      )
   );
 });
 

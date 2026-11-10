@@ -16,7 +16,7 @@ import { getTurso } from '@/lib/turso'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const GAMES = ['racing', 'quiz'] as const
+const GAMES = ['racing', 'quiz', 'g2048', 'snake'] as const
 type GameId = (typeof GAMES)[number]
 
 const SubmitSchema = z.object({

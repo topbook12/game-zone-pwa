@@ -8,12 +8,15 @@
  *  - No accounts, no auth infra — anonymous deviceId identifies the player.
  */
 
+import { unlockAchievement } from '@/lib/achievements'
+import { getLang } from '@/lib/i18n'
+
 const DEVICE_KEY = 'gz-device-id'
 const NAME_KEY = 'gz-player-name'
 const QUEUE_KEY = 'gz-score-queue'
 const TOP_CACHE_KEY = (game: string) => `gz-top-cache-${game}`
 
-export type GameId = 'racing' | 'quiz'
+export type GameId = 'racing' | 'quiz' | 'g2048' | 'snake'
 
 export interface ScoreRow {
   player: string
@@ -112,6 +115,9 @@ export async function submitScore(game: GameId, score: number): Promise<SubmitOu
     })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     const data = (await res.json()) as { rank?: number; best?: number }
+    if (typeof data.rank === 'number' && data.rank >= 1 && data.rank <= 10) {
+      unlockAchievement('top10', getLang())
+    }
     return { status: 'synced', rank: data.rank, best: data.best }
   } catch {
     enqueue({ game, player, deviceId, score, ts: Date.now() })

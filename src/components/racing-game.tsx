@@ -24,7 +24,9 @@ import { SoundEngine } from '@/lib/racing/audio'
 import type { GameEvent, GamePhase, GameResult, HudData } from '@/lib/racing/types'
 import { readStoredNumber, writeStoredNumber, useStoredNumber, STORAGE_KEYS } from '@/lib/game-store'
 import { submitScore, type SubmitOutcome } from '@/lib/leaderboard'
-import { fmt, useI18n } from '@/lib/i18n'
+import { completeDaily } from '@/lib/daily'
+import { checkAchievements } from '@/lib/achievements'
+import { fmt, useI18n, getLang } from '@/lib/i18n'
 
 const RING_R = 42
 const RING_C = 2 * Math.PI * RING_R
@@ -49,9 +51,13 @@ function useMediaQuery(query: string): boolean {
 
 export interface RacingGameProps {
   onExit: () => void
+  /** When set, every run replays the same seeded daily circuit. */
+  dailySeed?: number | null
+  /** Date label for the daily circuit, e.g. "10 Nov". */
+  dailyDate?: string
 }
 
-export function RacingGame({ onExit }: RacingGameProps) {
+export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
   const { t } = useI18n()
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const engineRef = useRef<RacingEngine | null>(null)
@@ -69,6 +75,9 @@ export function RacingGame({ onExit }: RacingGameProps) {
   const [muted, setMuted] = useState(false)
   const [userTouched, setUserTouched] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
+  const [tiltOn, setTiltOn] = useState(
+    () => typeof window !== 'undefined' && readStoredNumber('gz-racing-tilt', 0) === 1
+  )
   const [hasTouchApi] = useState(
     () => typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0)
   )
@@ -140,6 +149,10 @@ export function RacingGame({ onExit }: RacingGameProps) {
       const isBest = ev.result.score > prevBest
       if (isBest) writeStoredNumber(STORAGE_KEYS.racingBest, ev.result.score)
       writeStoredNumber(STORAGE_KEYS.plays, readStoredNumber(STORAGE_KEYS.plays, 0) + 1)
+      if (dailySeed != null) {
+        completeDaily('racing', ev.result.score)
+        checkAchievements(getLang())
+      }
       setResult({ ...ev.result, isBest })
       setSync(null)
       submitScore('racing', ev.result.score)
@@ -148,7 +161,7 @@ export function RacingGame({ onExit }: RacingGameProps) {
     } else if (ev.type === 'crash') {
       if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(60)
     }
-  }, [])
+  }, [dailySeed])
 
   /* -------- actions -------- */
   const handleStart = useCallback(() => {
@@ -193,6 +206,47 @@ export function RacingGame({ onExit }: RacingGameProps) {
     void doIt()
   }, [])
 
+  /** Toggle tilt steering (requests iOS motion permission when needed). */
+  const toggleTilt = useCallback(() => {
+    setTiltOn((prev) => {
+      const next = !prev
+      writeStoredNumber('gz-racing-tilt', next ? 1 : 0)
+      if (next) {
+        const DOE = window.DeviceOrientationEvent as unknown as {
+          requestPermission?: () => Promise<string>
+        }
+        if (DOE && typeof DOE.requestPermission === 'function') {
+          void DOE.requestPermission().catch(() => undefined)
+        }
+      }
+      return next
+    })
+  }, [])
+
+  /* -------- tilt steering → analog input -------- */
+  useEffect(() => {
+    if (!tiltOn) return
+    const handler = (e: DeviceOrientationEvent) => {
+      const en = engineRef.current
+      if (!en || e.gamma == null || e.beta == null) return
+      const so =
+        typeof screen !== 'undefined' && screen.orientation
+          ? screen.orientation.angle
+          : ((window as unknown as { orientation?: number }).orientation ?? 0)
+      let tilt: number
+      if (so === 90) tilt = e.beta / 45
+      else if (so === 270 || so === -90) tilt = -e.beta / 45
+      else if (so === 180) tilt = -e.gamma / 45
+      else tilt = e.gamma / 45
+      en.input.steerAnalog = Math.max(-1, Math.min(1, tilt))
+    }
+    window.addEventListener('deviceorientation', handler)
+    return () => {
+      window.removeEventListener('deviceorientation', handler)
+      if (engineRef.current) engineRef.current.input.steerAnalog = 0
+    }
+  }, [tiltOn])
+
   const backToMenu = useCallback(() => {
     setResult(null)
     engineRef.current?.toMenu()
@@ -207,6 +261,7 @@ export function RacingGame({ onExit }: RacingGameProps) {
     soundRef.current = sound
     const engine = new RacingEngine(canvas, { onFrame, onPhase: handlePhase, onEvent: handleEvent }, sound)
     engineRef.current = engine
+    engine.setDaily(dailySeed ?? null)
     engine.boot()
 
     const ro = new ResizeObserver(() => engine.resize())
@@ -231,7 +286,7 @@ export function RacingGame({ onExit }: RacingGameProps) {
       if (toastTimer.current) window.clearTimeout(toastTimer.current)
       engine.shutdown()
     }
-  }, [onFrame, handlePhase, handleEvent])
+  }, [onFrame, handlePhase, handleEvent, dailySeed])
 
   /* -------- keyboard -------- */
   useEffect(() => {
@@ -350,6 +405,34 @@ export function RacingGame({ onExit }: RacingGameProps) {
     onLostPointerCapture: () => {
       const en = engineRef.current
       if (en) en.input[key] = false
+    },
+  })
+
+  /* Invisible half-screen steering zones — press & hold anywhere */
+  const zoneBind = (side: 'left' | 'right') => ({
+    onPointerDown: (e: React.PointerEvent<HTMLDivElement>) => {
+      e.preventDefault()
+      setUserTouched(true)
+      const en = engineRef.current
+      if (en) en.input[side] = true
+    },
+    onPointerEnter: (e: React.PointerEvent<HTMLDivElement>) => {
+      if (e.buttons > 0) {
+        const en = engineRef.current
+        if (en) en.input[side] = true
+      }
+    },
+    onPointerUp: () => {
+      const en = engineRef.current
+      if (en) en.input[side] = false
+    },
+    onPointerCancel: () => {
+      const en = engineRef.current
+      if (en) en.input[side] = false
+    },
+    onPointerLeave: () => {
+      const en = engineRef.current
+      if (en) en.input[side] = false
     },
   })
 
@@ -500,27 +583,32 @@ export function RacingGame({ onExit }: RacingGameProps) {
       {/* ---------------- touch controls ---------------- */}
       {touchMode && phase === 'playing' && (
         <>
-          <div className="absolute bottom-[max(4.5rem,calc(env(safe-area-inset-bottom)+4.5rem))] left-4 z-20 flex gap-3">
+          {/* press-and-hold anywhere: left half / right half steer */}
+          <div className="absolute inset-x-0 bottom-0 top-[24%] z-[15] flex" aria-hidden="true">
+            <div {...zoneBind('left')} className="h-full w-1/2" />
+            <div {...zoneBind('right')} className="h-full w-1/2" />
+          </div>
+          <div className="pointer-events-none absolute bottom-[max(5.25rem,calc(env(safe-area-inset-bottom)+5.25rem))] left-4 z-20 flex gap-3">
             <button
               {...bind('left')}
               aria-label={t.racing.steerLeftAria}
-              className="flex h-[74px] w-[74px] items-center justify-center rounded-full border border-white/25 bg-black/40 text-white backdrop-blur-md transition active:scale-90 active:bg-white/25"
+              className="pointer-events-auto flex h-[84px] w-[84px] items-center justify-center rounded-full border border-white/25 bg-black/45 text-white shadow-lg backdrop-blur-md transition active:scale-90 active:bg-white/25"
             >
-              <SteerLeft className="h-9 w-9" />
+              <SteerLeft className="h-10 w-10" />
             </button>
             <button
               {...bind('right')}
               aria-label={t.racing.steerRightAria}
-              className="flex h-[74px] w-[74px] items-center justify-center rounded-full border border-white/25 bg-black/40 text-white backdrop-blur-md transition active:scale-90 active:bg-white/25"
+              className="pointer-events-auto flex h-[84px] w-[84px] items-center justify-center rounded-full border border-white/25 bg-black/45 text-white shadow-lg backdrop-blur-md transition active:scale-90 active:bg-white/25"
             >
-              <SteerRight className="h-9 w-9" />
+              <SteerRight className="h-10 w-10" />
             </button>
           </div>
-          <div className="absolute bottom-[max(4.5rem,calc(env(safe-area-inset-bottom)+4.5rem))] right-4 z-20 flex items-end gap-3">
+          <div className="pointer-events-none absolute bottom-[max(5.25rem,calc(env(safe-area-inset-bottom)+5.25rem))] right-4 z-20 flex items-end gap-3">
             <button
               {...bind('brake')}
               aria-label={t.racing.brakeAria}
-              className="flex h-16 w-20 items-center justify-center gap-1 rounded-2xl border border-red-300/40 bg-red-600/55 text-xs font-black tracking-widest text-white backdrop-blur-md transition active:scale-90 active:bg-red-500/70"
+              className="pointer-events-auto flex h-16 w-[88px] items-center justify-center gap-1 rounded-2xl border border-red-300/40 bg-red-600/55 text-xs font-black tracking-widest text-white shadow-lg backdrop-blur-md transition active:scale-90 active:bg-red-500/70"
             >
               <Octagon className="h-4 w-4" />
               {t.racing.brake}
@@ -528,7 +616,7 @@ export function RacingGame({ onExit }: RacingGameProps) {
             <button
               {...bind('nitro')}
               aria-label={t.racing.nitroAria}
-              className="flex h-20 w-20 flex-col items-center justify-center gap-0.5 rounded-full border border-amber-300/50 bg-amber-500/60 text-xs font-black tracking-widest text-stone-950 backdrop-blur-md transition active:scale-90 active:bg-amber-400/80"
+              className="pointer-events-auto flex h-[88px] w-[88px] flex-col items-center justify-center gap-0.5 rounded-full border border-amber-300/50 bg-amber-500/60 text-xs font-black tracking-widest text-stone-950 shadow-lg shadow-amber-900/40 backdrop-blur-md transition active:scale-90 active:bg-amber-400/80"
             >
               <Zap className="h-6 w-6" />
               {t.racing.nitro}
@@ -559,7 +647,15 @@ export function RacingGame({ onExit }: RacingGameProps) {
             <div className="flex w-full max-w-md flex-col items-center gap-5 text-center">
               <div>
                 <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-500/15 px-3 py-1 text-[10px] font-bold tracking-[0.25em] text-amber-300">
-                  {t.racing.menuBadge}
+                  {dailySeed != null ? (
+                    <>
+                      <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
+                      {t.racing.dailyBadge}
+                      {dailyDate ? ` · ${dailyDate}` : ''}
+                    </>
+                  ) : (
+                    t.racing.menuBadge
+                  )}
                 </div>
                 <h1 className="text-5xl font-black italic tracking-tight sm:text-6xl">
                   <span className="bg-gradient-to-r from-amber-300 via-orange-400 to-red-500 bg-clip-text text-transparent drop-shadow-[0_4px_18px_rgba(234,88,12,0.45)]">
@@ -567,7 +663,7 @@ export function RacingGame({ onExit }: RacingGameProps) {
                   </span>
                 </h1>
                 <p className="mt-1.5 text-xs font-bold tracking-[0.35em] text-white/60">
-                  SUNSET RIDGE CIRCUIT
+                  {dailySeed != null && dailyDate ? `DAILY CIRCUIT · ${dailyDate}` : t.racing.circuit}
                 </p>
               </div>
 
@@ -589,17 +685,30 @@ export function RacingGame({ onExit }: RacingGameProps) {
 
               <div className="grid w-full gap-2 text-left text-[11px] leading-relaxed text-white/65 sm:grid-cols-2">
                 <div className="rounded-xl border border-white/10 bg-black/35 p-3 backdrop-blur-sm">
-                  <div className="mb-1 text-[10px] font-black tracking-[0.2em] text-amber-300">{t.racing.kbTitle}</div>
-                  {t.racing.kbLine1}
-                  <br /> {t.racing.kbLine2}
-                </div>
-                <div className="rounded-xl border border-white/10 bg-black/35 p-3 backdrop-blur-sm">
                   <div className="mb-1 text-[10px] font-black tracking-[0.2em] text-amber-300">{t.racing.touchTitle}</div>
                   {t.racing.touchLine1}
                   <br />
                   {t.racing.touchLine2}
                 </div>
+                <div className="rounded-xl border border-white/10 bg-black/35 p-3 backdrop-blur-sm">
+                  <div className="mb-1 text-[10px] font-black tracking-[0.2em] text-amber-300">{t.racing.kbTitle}</div>
+                  {t.racing.kbLine1}
+                  <br /> {t.racing.kbLine2}
+                </div>
               </div>
+
+              <button
+                onClick={toggleTilt}
+                aria-pressed={tiltOn}
+                className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-bold transition ${
+                  tiltOn
+                    ? 'border-amber-400/60 bg-amber-500/20 text-amber-300'
+                    : 'border-white/20 bg-black/40 text-white/70 hover:bg-white/10'
+                }`}
+              >
+                <Smartphone className={`h-4 w-4 ${tiltOn ? 'animate-pulse' : ''}`} />
+                {tiltOn ? t.racing.tiltOn : t.racing.tiltOff}
+              </button>
 
               <p className="max-w-sm text-[11px] leading-relaxed text-white/50">
                 {t.racing.menuDesc}

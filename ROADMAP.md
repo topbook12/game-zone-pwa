@@ -3,7 +3,7 @@
 **Principle:** every phase must stay cost-effective (client-first, free tiers, no idle servers)
 and ship *premium-feeling* features players love. One release per week is enough — quality > speed.
 
-> Current status (Day 10): Racing ✅ · Quiz ✅ · PWA offline ✅ · Global leaderboard ✅ · Vercel deploy ✅ · **Phase 1 hardening ✅ (v1.3)**
+> Current status (Day 25): Racing v2 ✅ · Quiz v2 ✅ · 2048 ✅ · Snake ✅ · Daily challenge ✅ · Achievements ✅ · PWA offline ✅ · Global leaderboard ✅ · Vercel deploy ✅ · **Phase 2 content ✅ (v2.0)**
 
 ---
 
@@ -21,15 +21,17 @@ and ship *premium-feeling* features players love. One release per week is enough
 
 **Milestone:** ✅ stable, installable, offline-proof v1.3 — ready for first real players.
 
-## Phase 2 — Content & retention (Day 11–25) ← NEXT
-- [ ] Quiz question packs v2: Sports, Movies, Bangladesh GK, Math blitz (bundle client-side = $0)
-- [ ] Daily challenge: seeded daily seed (same 10 questions/track for everyone, client-computed)
-- [ ] Achievements (first win, 10 games, top-10 leaderboard…), stored in localStorage
-- [ ] New game #1: **2048** (pure client, ~1 day build)
-- [ ] New game #2: **Snake Neon** (pure client)
-- [ ] App icon pack + better game banners (AI-generated, compressed < 60 KB each)
+## Phase 2 — Content & retention (Day 11–25) ✅ DONE — shipped as v2.0
+- [x] Quiz question packs v2: Movies, Bangladesh GK, Math blitz added → **9 categories, 90+ questions** (bundle client-side = $0)
+- [x] Daily challenge: date-seeded (mulberry32) — same 10 quiz questions AND same racing circuit (seeded track/hills/traffic) for every player, client-computed, offline-safe; streak counter + hub card with per-task checkmarks
+- [x] Achievements: 14 badges (first play, play counts, racing 5k/20k, quiz 1000, 512/2048 tile, snake 200/500, daily streak 3/7, global top-10) with progress bars, sonner toasts on unlock, localStorage only
+- [x] New game #1: **2048 Fusion** — swipe/keys, animated slides + merges, undo, win/keep-going, premium golden tiles
+- [x] New game #2: **Snake Neon** — canvas glow snake, swipe + d-pad + keys, particles, speed levels, synthwave neon visuals
+- [x] App assets: AI-generated 2048/Snake banners (37–53 KB), all banners → compressed JPG, icons recompressed (icon-512: 250 KB → 66 KB)
+- [x] Racing v2 mobile pass: press-and-hold left/right half of screen steers, optional **tilt steering** (analog, persisted), bigger pads (84–88 px), analog steer input in engine
+- [x] Racing v2 premium visuals: seeded procedural tracks (new every run), city skyline + stars + birds + lens streak, headlight cone, brake-light glow, traffic tail lights, reflective cat-eyes, nitro heat tint, speed-line boost
 
-**Milestone:** daily-return habit loop (daily challenge + achievements).
+**Milestone:** ✅ daily-return habit loop (daily challenge + achievements) + 4-game hub shipped.
 
 ## Phase 3 — Social & competition (Day 26–45)
 - [ ] Weekly tournaments: reset window per game, winner badge on profile

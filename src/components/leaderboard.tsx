@@ -195,6 +195,18 @@ export function Leaderboard({ open, onOpenChange }: Props) {
             >
               {t.board.tabQuiz}
             </TabsTrigger>
+            <TabsTrigger
+              value="g2048"
+              className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-300"
+            >
+              {t.board.tab2048}
+            </TabsTrigger>
+            <TabsTrigger
+              value="snake"
+              className="data-[state=active]:bg-teal-500/20 data-[state=active]:text-teal-300"
+            >
+              {t.board.tabSnake}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="racing">
@@ -202,6 +214,12 @@ export function Leaderboard({ open, onOpenChange }: Props) {
           </TabsContent>
           <TabsContent value="quiz">
             <TopList cache={byGame.quiz} emptyLabel={t.board.empty} />
+          </TabsContent>
+          <TabsContent value="g2048">
+            <TopList cache={byGame.g2048} emptyLabel={t.board.empty} />
+          </TabsContent>
+          <TabsContent value="snake">
+            <TopList cache={byGame.snake} emptyLabel={t.board.empty} />
           </TabsContent>
         </Tabs>
 

@@ -1,7 +1,9 @@
 /**
  * Quiz game question bank (English)
- * 6 categories x 10 questions + mixed mode
+ * 9 categories x 10 questions + mixed mode + seeded daily picker
  */
+
+import { mulberry32, seededShuffle } from '@/lib/daily'
 
 export interface QuizQuestion {
   question: string
@@ -18,6 +20,9 @@ export type QuizCategoryId =
   | 'geography'
   | 'sports'
   | 'tech'
+  | 'movies'
+  | 'bd'
+  | 'math'
   | 'mixed'
 
 export interface QuizCategory {
@@ -71,6 +76,27 @@ export const QUIZ_CATEGORIES: QuizCategory[] = [
     emoji: '💻',
     accent: 'border-violet-500/60 hover:border-violet-400',
     description: 'Computers & the internet',
+  },
+  {
+    id: 'movies',
+    name: 'Movies',
+    emoji: '🎬',
+    accent: 'border-rose-500/60 hover:border-rose-400',
+    description: 'Films, superheroes & animation',
+  },
+  {
+    id: 'bd',
+    name: 'Bangladesh GK',
+    emoji: '🇧🇩',
+    accent: 'border-green-500/60 hover:border-green-400',
+    description: 'Bangladesh history, culture & places',
+  },
+  {
+    id: 'math',
+    name: 'Math Blitz',
+    emoji: '➗',
+    accent: 'border-cyan-500/60 hover:border-cyan-400',
+    description: 'Fast mental math challenges',
   },
   {
     id: 'mixed',
@@ -153,6 +179,42 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
   { category: 'tech', question: 'What is the short form of Artificial Intelligence?', options: ['AI', 'AR', 'VR', 'ML'], answer: 0 },
   { category: 'tech', question: 'What does "HTTP" stand for?', options: ['HyperText Transfer Protocol', 'High Transfer Text Protocol', 'Hyper Transfer Type Protocol', 'Home Text Transfer Protocol'], answer: 0 },
   { category: 'tech', question: 'Which company created the iPhone?', options: ['Samsung', 'Apple', 'Nokia', 'Sony'], answer: 1 },
+
+  // ---------- Movies ----------
+  { category: 'movies', question: 'Which movie features the song "My Heart Will Go On"?', options: ['Titanic', 'Avatar', 'The Lion King', 'Gladiator'], answer: 0 },
+  { category: 'movies', question: 'What is the real name of Iron Man in the MCU?', options: ['Steve Rogers', 'Bruce Banner', 'Tony Stark', 'Thor Odinson'], answer: 2 },
+  { category: 'movies', question: 'Which animated movie features a clownfish searching for his son?', options: ['Moana', 'Finding Nemo', 'Up', 'Ratatouille'], answer: 1 },
+  { category: 'movies', question: 'Who directed the movie "Titanic"?', options: ['Steven Spielberg', 'Christopher Nolan', 'James Cameron', 'Ridley Scott'], answer: 2 },
+  { category: 'movies', question: 'In which movie would you hear "May the Force be with you"?', options: ['Star Trek', 'Star Wars', 'Dune', 'The Matrix'], answer: 1 },
+  { category: 'movies', question: 'Which movie features a lion cub named Simba?', options: ['Madagascar', 'The Jungle Book', 'The Lion King', 'Zootopia'], answer: 2 },
+  { category: 'movies', question: 'What is the highest-grossing film of all time (as of 2024)?', options: ['Avengers: Endgame', 'Avatar', 'Titanic', 'Star Wars: The Force Awakens'], answer: 1 },
+  { category: 'movies', question: 'Which superhero protects Gotham City?', options: ['Superman', 'Spider-Man', 'Batman', 'Iron Man'], answer: 2 },
+  { category: 'movies', question: 'In "Finding Nemo", what kind of fish is Nemo?', options: ['Angelfish', 'Clownfish', 'Pufferfish', 'Swordfish'], answer: 1 },
+  { category: 'movies', question: 'Which movie features the character Jack Sparrow?', options: ['Pirates of the Caribbean', 'Indiana Jones', 'The Mummy', 'King Kong'], answer: 0 },
+
+  // ---------- Bangladesh GK ----------
+  { category: 'bd', question: 'What is the capital of Bangladesh?', options: ['Chattogram', 'Dhaka', 'Khulna', 'Sylhet'], answer: 1 },
+  { category: 'bd', question: 'Which is the national fruit of Bangladesh?', options: ['Mango', 'Jackfruit', 'Banana', 'Litchi'], answer: 1 },
+  { category: 'bd', question: 'Which river is the longest in Bangladesh?', options: ['Padma', 'Meghna', 'Jamuna', 'Karnaphuli'], answer: 1 },
+  { category: 'bd', question: 'What is the national animal of Bangladesh?', options: ['Tiger', 'Elephant', 'Deer', 'Peacock'], answer: 0 },
+  { category: 'bd', question: 'Which sea is to the south of Bangladesh?', options: ['Arabian Sea', 'Bay of Bengal', 'Indian Ocean', 'Pacific Ocean'], answer: 1 },
+  { category: 'bd', question: 'What is the national fish of Bangladesh?', options: ['Rui', 'Ilish (Hilsa)', 'Katla', 'Prawn'], answer: 1 },
+  { category: 'bd', question: 'Which city is known as the port city of Bangladesh?', options: ['Dhaka', 'Sylhet', 'Chattogram', 'Rajshahi'], answer: 2 },
+  { category: 'bd', question: 'In which year did the Language Movement take place?', options: ['1947', '1952', '1969', '1971'], answer: 1 },
+  { category: 'bd', question: 'What is the national tree of Bangladesh?', options: ['Banyan', 'Mango tree', 'Mangrove', 'Palm'], answer: 1 },
+  { category: 'bd', question: 'Which is the largest division of Bangladesh by area?', options: ['Dhaka', 'Chattogram', 'Rajshahi', 'Khulna'], answer: 1 },
+
+  // ---------- Math Blitz ----------
+  { category: 'math', question: 'What is 15% of 200?', options: ['15', '25', '30', '35'], answer: 2 },
+  { category: 'math', question: 'What is 12 × 12?', options: ['124', '132', '144', '156'], answer: 2 },
+  { category: 'math', question: 'What is the next number: 2, 4, 8, 16, ...?', options: ['24', '30', '32', '64'], answer: 2 },
+  { category: 'math', question: 'What is 100 ÷ 4?', options: ['20', '25', '30', '40'], answer: 1 },
+  { category: 'math', question: 'What is the value of π (pi) rounded to 2 decimals?', options: ['3.12', '3.14', '3.16', '3.18'], answer: 1 },
+  { category: 'math', question: 'What is 7 + 8 × 2?', options: ['22', '30', '23', '15'], answer: 2 },
+  { category: 'math', question: 'How many sides does a hexagon have?', options: ['5', '6', '7', '8'], answer: 1 },
+  { category: 'math', question: 'What is the square root of 144?', options: ['10', '11', '12', '14'], answer: 2 },
+  { category: 'math', question: 'If a shirt costs 400 taka with a 25% discount, what do you pay?', options: ['300 taka', '320 taka', '350 taka', '375 taka'], answer: 0 },
+  { category: 'math', question: 'What is 2⁵ (2 to the power 5)?', options: ['16', '25', '32', '64'], answer: 2 },
 ]
 
 /** Pick random questions from a category (options are shuffled too). */
@@ -164,6 +226,24 @@ export function pickQuizQuestions(category: QuizCategoryId, count = 10): QuizQue
   return shuffled.slice(0, Math.min(count, shuffled.length)).map((q) => {
     const paired = q.options.map((opt, i) => ({ opt, correct: i === q.answer }))
     const shuffledOptions = paired.sort(() => Math.random() - 0.5)
+    return {
+      ...q,
+      options: shuffledOptions.map((p) => p.opt),
+      answer: shuffledOptions.findIndex((p) => p.correct),
+    }
+  })
+}
+
+/**
+ * DAILY CHALLENGE picker — fully deterministic per seed: every player on the
+ * same date gets the exact same 10 questions AND option order.
+ */
+export function pickDailyQuizQuestions(seed: number, count = 10): QuizQuestion[] {
+  const rng = mulberry32(seed)
+  const pool = seededShuffle(QUIZ_QUESTIONS, rng).slice(0, Math.min(count, QUIZ_QUESTIONS.length))
+  return pool.map((q) => {
+    const paired = q.options.map((opt, i) => ({ opt, correct: i === q.answer }))
+    const shuffledOptions = seededShuffle(paired, rng)
     return {
       ...q,
       options: shuffledOptions.map((p) => p.opt),

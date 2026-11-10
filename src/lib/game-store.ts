@@ -58,4 +58,7 @@ export const STORAGE_KEYS = {
   plays: 'gz-plays',
   racingBest: 'gz-racing-best',
   quizBest: (category: string) => `gz-quiz-best-${category}`,
+  g2048Best: 'gz-g2048-best',
+  g2048Tile: 'gz-g2048-tile',
+  snakeBest: 'gz-snake-best',
 } as const

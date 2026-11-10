@@ -38,6 +38,8 @@ export interface InputState {
   gas: boolean
   brake: boolean
   nitro: boolean
+  /** Analog steering −1..1 (tilt / drag). Used when |value| > deadzone. */
+  steerAnalog: number
 }
 
 export interface EngineOptions {

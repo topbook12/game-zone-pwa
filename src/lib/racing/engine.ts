@@ -5,6 +5,7 @@
  */
 import type { EngineOptions, GamePhase, HudData, InputState } from './types'
 import type { SoundEngine } from './audio'
+import { mulberry32 } from '@/lib/daily'
 import {
   createPlayerCar,
   createSpriteAssets,
@@ -40,15 +41,15 @@ const CP_SEGS = 400
 const CP_INTERVAL = CP_SEGS * SEG_LEN
 const CP_BONUS = 24
 const TRACK_SEGS = 1600
-const CAR_COUNT = 26
 const METERS_PER_UNIT = 1 / 300
+const TILT_DEADZONE = 0.12
 
 /* ------------------------- colors ------------------------- */
 const COLORS = {
   light: { road: '#6d6d6d', grass: '#cfa76b', rumble: '#f5f1e3', lane: '#f0ead6' },
-  dark: { road: '#666666', grass: '#c39a5f', rumble: '#d84f45' },
-  start: { road: '#e8e4da', grass: '#cfa76b', rumble: '#e8e4da' },
-  cp: { road: '#616161', grass: '#cfa76b', rumble: '#e76f51' },
+  dark: { road: '#666666', grass: '#c39a5f', rumble: '#d84f45', lane: '#c9c2ad' },
+  start: { road: '#e8e4da', grass: '#cfa76b', rumble: '#e8e4da', lane: '#c9c2ad' },
+  cp: { road: '#616161', grass: '#cfa76b', rumble: '#e76f51', lane: '#c9c2ad' },
 } as const
 type ColorKey = keyof typeof COLORS
 const FOG_COLOR = '#ffe3b8'
@@ -198,7 +199,7 @@ export class RacingEngine {
   topSpeed = 0
   totalDist = 0
   autoGas = false
-  input: InputState = { left: false, right: false, gas: false, brake: false, nitro: false }
+  input: InputState = { left: false, right: false, gas: false, brake: false, nitro: false, steerAnalog: 0 }
 
   private nextCp = CP_INTERVAL
   private countdownT = 0
@@ -213,6 +214,12 @@ export class RacingEngine {
   private bgShift = 0
   private particles: Particle[] = []
   private clouds: Cloud[] = []
+  private stars: { fx: number; fy: number; s: number; tw: number; ph: number }[] = []
+  private skyline: { x: number; w: number; h: number; ant: boolean }[] = []
+  private birds: { fx: number; fy: number; spd: number; ph: number }[] = []
+  private rng: () => number = Math.random
+  /** When set (daily challenge), every run rebuilds the SAME seeded circuit. */
+  dailySeed: number | null = null
   private skyGrad: CanvasGradient | null = null
   private vignette: CanvasGradient | null = null
 
@@ -228,16 +235,54 @@ export class RacingEngine {
       spd: 2 + Math.random() * 5,
       par: 0.03 + Math.random() * 0.05,
     }))
+    // stars (upper sky, twinkle)
+    this.stars = Array.from({ length: 64 }, () => ({
+      fx: Math.random(),
+      fy: Math.random() * 0.34,
+      s: 0.5 + Math.random() * 1.4,
+      tw: 0.6 + Math.random() * 2.4,
+      ph: Math.random() * Math.PI * 2,
+    }))
+    // distant city skyline silhouette
+    let sx = -0.05
+    while (sx < 1.1) {
+      const w = 0.018 + Math.random() * 0.042
+      this.skyline.push({
+        x: sx,
+        w,
+        h: 0.02 + Math.random() * 0.075,
+        ant: Math.random() < 0.28,
+      })
+      sx += w + 0.006 + Math.random() * 0.02
+    }
+    // lazy birds drifting across the sky
+    this.birds = Array.from({ length: 3 }, (_, i) => ({
+      fx: Math.random(),
+      fy: 0.08 + Math.random() * 0.16,
+      spd: 8 + Math.random() * 10,
+      ph: i * 2.1,
+    }))
   }
 
   boot(): void {
     this.assets = createSpriteAssets()
     this.playerImgs = createPlayerCar()
+    this.buildWorld(1)
+    this.resize()
+    this.toMenu()
+  }
+
+  /** Rebuild track + scenery + traffic from a seed (deterministic per seed). */
+  private buildWorld(seed: number): void {
+    this.rng = mulberry32(seed)
     this.buildTrack()
     this.decorate()
     this.seedCars()
-    this.resize()
-    this.toMenu()
+  }
+
+  /** Set the daily-challenge seed (or null for a fresh random circuit each run). */
+  setDaily(seed: number | null): void {
+    this.dailySeed = seed
   }
 
   resize(): void {
@@ -270,6 +315,8 @@ export class RacingEngine {
   /* --------------- lifecycle --------------- */
 
   startGame(): void {
+    const seed = this.dailySeed ?? ((Math.random() * 0xffffffff) >>> 0)
+    this.buildWorld(seed)
     this.resetRun()
     this.phase = 'countdown'
     this.countdownT = 3.0
@@ -327,6 +374,7 @@ export class RacingEngine {
     this.shakeT = 0
     this.crashFlash = 0
     this.particles = []
+    this.input.steerAnalog = 0
     this.seedCars()
     this.sound.stopEngine()
   }
@@ -426,8 +474,12 @@ export class RacingEngine {
     this.position = wrap(this.position + this.speed * dt, this.trackLength)
     this.totalDist += this.speed * dt
 
-    // steering + centrifugal force
-    const steerIn = (this.input.left ? -1 : 0) + (this.input.right ? 1 : 0)
+    // steering + centrifugal force (analog tilt/drag wins over buttons)
+    const analog = this.input.steerAnalog
+    const steerIn =
+      Math.abs(analog) > TILT_DEADZONE
+        ? analog
+        : (this.input.left ? -1 : 0) + (this.input.right ? 1 : 0)
     this.steerSmooth += (steerIn - this.steerSmooth) * Math.min(1, dt * 9)
     this.playerX += steerIn * dx
     this.playerX -= dx * spct * pSeg.curve * CENTRIFUGAL
@@ -713,23 +765,36 @@ export class RacingEngine {
 
   private buildTrack(): void {
     this.segments = []
-    this.addStraight(60)
-    this.addRoad(40, 40, 40, 3, 20)
-    this.addStraight(40)
-    this.addRoad(30, 50, 30, -4, -10)
-    this.addRoad(40, 40, 40, 0, 60)
-    this.addStraight(30)
-    this.addRoad(20, 20, 20, -4, 0)
-    this.addRoad(20, 20, 20, 4, 10)
-    this.addRoad(20, 20, 20, -3, -10)
-    this.addRoad(20, 20, 20, 3, 0)
-    this.addRoad(30, 60, 30, 5, -30)
-    this.addRoad(50, 50, 50, -1, -40)
-    this.addRoad(20, 20, 20, -5, 0)
-    this.addRoad(20, 20, 20, 5, 0)
-    this.addStraight(40)
-    this.addRoad(40, 80, 40, -3, 15)
-    this.addRoad(40, 40, 40, 2, -25)
+    const rng = this.rng
+    this.addStraight(50)
+    const target = TRACK_SEGS - 80
+    while (this.segments.length < target) {
+      const roll = rng()
+      const len = 24 + Math.floor(rng() * 36)
+      const a = Math.max(4, Math.floor(len / 3))
+      if (roll < 0.2) {
+        this.addStraight(len)
+      } else if (roll < 0.44) {
+        // sweeping curve, maybe with elevation
+        const dir = rng() < 0.5 ? -1 : 1
+        this.addRoad(a, len, a, dir * (2 + rng() * 4), (rng() - 0.4) * 70)
+      } else if (roll < 0.6) {
+        // S-curve combo
+        const dir = rng() < 0.5 ? -1 : 1
+        const c = 2 + rng() * 4
+        this.addRoad(a, len, a, dir * c, 0)
+        this.addRoad(a, len, a, -dir * c, (rng() - 0.3) * 50)
+      } else if (roll < 0.76) {
+        // hills / rollers
+        this.addRoad(a, len, a, 0, (rng() - 0.5) * 130)
+      } else if (roll < 0.9) {
+        // hard hairpin-ish bend
+        const dir = rng() < 0.5 ? -1 : 1
+        this.addRoad(Math.max(4, a - 6), Math.max(8, len - 10), Math.max(4, a - 6), dir * (4 + rng() * 2.5), 0)
+      } else {
+        this.addStraight(len)
+      }
+    }
     // pad to exactly TRACK_SEGS so checkpoints align every lap
     while (this.segments.length < TRACK_SEGS) this.addStraight(Math.min(60, TRACK_SEGS - this.segments.length))
     this.segments.length = TRACK_SEGS
@@ -748,15 +813,15 @@ export class RacingEngine {
     // palms + bushes
     let n = 18
     while (n < TRACK_SEGS - 10) {
-      const side = Math.random() < 0.5 ? -1 : 1
+      const side = this.rng() < 0.5 ? -1 : 1
       this.seg(n).sprites.push({
-        key: Math.random() < 0.5 ? 'palmA' : 'palmB',
-        offset: side * (1.8 + Math.random() * 2.8),
+        key: this.rng() < 0.5 ? 'palmA' : 'palmB',
+        offset: side * (1.8 + this.rng() * 2.8),
       })
-      if (Math.random() < 0.4) {
-        this.seg(n).sprites.push({ key: 'bush', offset: -side * (1.4 + Math.random() * 2.5) })
+      if (this.rng() < 0.4) {
+        this.seg(n).sprites.push({ key: 'bush', offset: -side * (1.4 + this.rng() * 2.5) })
       }
-      n += 10 + Math.floor(Math.random() * 14)
+      n += 10 + Math.floor(this.rng() * 14)
     }
     // billboards
     const boardSegs = [80, 210, 460, 700, 940, 1180, 1420]
@@ -766,13 +831,13 @@ export class RacingEngine {
     // rocks
     n = 24
     while (n < TRACK_SEGS - 6) {
-      if (Math.random() < 0.5) {
+      if (this.rng() < 0.5) {
         this.seg(n).sprites.push({
           key: 'rock',
-          offset: (Math.random() < 0.5 ? -1 : 1) * (1.6 + Math.random() * 1.8),
+          offset: (this.rng() < 0.5 ? -1 : 1) * (1.6 + this.rng() * 1.8),
         })
       }
-      n += 18 + Math.floor(Math.random() * 22)
+      n += 18 + Math.floor(this.rng() * 22)
     }
     // poles on curve outsides
     for (let s = 0; s < TRACK_SEGS; s += 24) {
@@ -786,15 +851,16 @@ export class RacingEngine {
   private seedCars(): void {
     this.cars = []
     const keys = ['car0', 'car1', 'car2', 'car3', 'car4']
-    for (let i = 0; i < CAR_COUNT; i++) {
+    const count = 20 + Math.floor(this.rng() * 10)
+    for (let i = 0; i < count; i++) {
       this.cars.push({
-        offset: [-0.667, 0, 0.667][i % 3] + (Math.random() - 0.5) * 0.12,
-        z: 80 * SEG_LEN + Math.random() * (this.trackLength - 100 * SEG_LEN),
-        speed: MAX_SPEED * (0.26 + Math.random() * 0.34),
+        offset: [-0.667, 0, 0.667][i % 3] + (this.rng() - 0.5) * 0.12,
+        z: 80 * SEG_LEN + this.rng() * (this.trackLength - 100 * SEG_LEN),
+        speed: MAX_SPEED * (0.24 + this.rng() * 0.38),
         key: keys[i % 5],
         prevDiff: 1e9,
         drift: 0,
-        aiT: Math.random() * 3,
+        aiT: this.rng() * 3,
       })
     }
   }
@@ -877,6 +943,12 @@ export class RacingEngine {
       ctx.fillStyle = `rgba(255,84,48,${(this.crashFlash * 0.32).toFixed(3)})`
       ctx.fillRect(0, 0, W, H)
     }
+    if (this.nitroActive) {
+      // subtle heat tint pulsing with the boost
+      const heat = 0.05 + 0.045 * Math.sin(this.timeAbs * 22)
+      ctx.fillStyle = `rgba(255,122,40,${heat.toFixed(3)})`
+      ctx.fillRect(0, 0, W, H)
+    }
     if (this.vignette) {
       ctx.fillStyle = this.vignette
       ctx.fillRect(0, 0, W, H)
@@ -900,7 +972,15 @@ export class RacingEngine {
       ctx.fillRect(0, 0, W, H)
     }
 
-    // sun with glow
+    // twinkling stars in the upper sky
+    for (const st of this.stars) {
+      const a = 0.18 + 0.5 * Math.abs(Math.sin(this.timeAbs * st.tw + st.ph))
+      ctx.fillStyle = `rgba(255,244,224,${a.toFixed(3)})`
+      const px = wrap(st.fx * W - this.bgShift * 0.008, W)
+      ctx.fillRect(px, st.fy * H * 0.9, st.s, st.s)
+    }
+
+    // sun with glow + lens streak
     const sunX = W * 0.63
     const sunY = horizonY - H * 0.17
     const glow = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, H * 0.32)
@@ -908,6 +988,12 @@ export class RacingEngine {
     glow.addColorStop(1, 'rgba(255,214,140,0)')
     ctx.fillStyle = glow
     ctx.fillRect(0, 0, W, H)
+    const streak = ctx.createLinearGradient(sunX - W * 0.28, sunY, sunX + W * 0.28, sunY)
+    streak.addColorStop(0, 'rgba(255,224,170,0)')
+    streak.addColorStop(0.5, 'rgba(255,224,170,0.28)')
+    streak.addColorStop(1, 'rgba(255,224,170,0)')
+    ctx.fillStyle = streak
+    ctx.fillRect(sunX - W * 0.28, sunY - H * 0.004, W * 0.56, H * 0.008)
     ctx.fillStyle = '#fff3d6'
     ctx.beginPath()
     ctx.arc(sunX, sunY, H * 0.055, 0, Math.PI * 2)
@@ -925,6 +1011,34 @@ export class RacingEngine {
       ctx.ellipse(px - 26 * s, py + 6 * s, 26 * s, 10 * s, 0, 0, Math.PI * 2)
       ctx.ellipse(px + 28 * s, py + 4 * s, 30 * s, 11 * s, 0, 0, Math.PI * 2)
       ctx.fill()
+    }
+
+    // drifting birds (tiny flapping V shapes)
+    ctx.strokeStyle = 'rgba(70,38,24,0.55)'
+    ctx.lineWidth = 1.4
+    for (const b of this.birds) {
+      const span = W + 60
+      const px = wrap(b.fx * span + this.timeAbs * b.spd - this.bgShift * 0.012, span) - 30
+      const py = b.fy * H + Math.sin(this.timeAbs * 0.7 + b.ph) * 6
+      const flap = Math.sin(this.timeAbs * 7 + b.ph) * 2.4
+      ctx.beginPath()
+      ctx.moveTo(px - 4, py + flap)
+      ctx.lineTo(px, py - flap)
+      ctx.lineTo(px + 4, py + flap)
+      ctx.stroke()
+    }
+
+    // distant city skyline (slowest parallax layer)
+    const cityShift = this.bgShift * 0.02
+    ctx.fillStyle = 'rgba(122,70,48,0.5)'
+    for (const b of this.skyline) {
+      const bw = b.w * W
+      const bx = wrap(b.x * W - cityShift, W + 140) - 70
+      const bh = b.h * H
+      ctx.fillRect(bx, horizonY - bh, bw, bh + 2)
+      if (b.ant) {
+        ctx.fillRect(bx + bw / 2 - 1, horizonY - bh - 6, 2, 6)
+      }
     }
 
     // mountain ridges (procedural, parallax on curves)
@@ -991,6 +1105,16 @@ export class RacingEngine {
       }
     }
 
+    // reflective cat-eyes along the road edges (every 8th segment)
+    if (seg.index % 8 === 0 && p1.w > 8) {
+      const er = clamp(p1.w * 0.007, 0.8, 2.6)
+      ctx.fillStyle = 'rgba(255,233,168,0.95)'
+      ctx.beginPath()
+      ctx.arc(p1.x - p1.w * 1.04, p1.y, er, 0, Math.PI * 2)
+      ctx.arc(p1.x + p1.w * 1.04, p1.y, er, 0, Math.PI * 2)
+      ctx.fill()
+    }
+
     if (seg.fog < 1) {
       const [r, g, b] = FOG_RGB
       ctx.fillStyle = `rgba(${r},${g},${b},${(1 - seg.fog).toFixed(3)})`
@@ -1031,6 +1155,14 @@ export class RacingEngine {
       0, 0, img.width, img.height * (1 - clipH / destH),
       destX, destY, destW, destH - clipH
     )
+    if (isCar && fogPct > 0.25) {
+      // rear tail-light glow (we see the back of traffic cars)
+      ctx.fillStyle = `rgba(255,64,40,${(0.42 * fogPct).toFixed(3)})`
+      ctx.beginPath()
+      ctx.ellipse(x - destW * 0.26, y - destH * 0.16, destW * 0.07, destH * 0.05, 0, 0, Math.PI * 2)
+      ctx.ellipse(x + destW * 0.26, y - destH * 0.16, destW * 0.07, destH * 0.05, 0, 0, Math.PI * 2)
+      ctx.fill()
+    }
     ctx.globalAlpha = 1
   }
 
@@ -1050,6 +1182,21 @@ export class RacingEngine {
     ctx.fillStyle = 'rgba(20,8,4,0.35)'
     ctx.beginPath()
     ctx.ellipse(cx, bottomY - 6, carW * 0.44, carW * 0.07, 0, 0, Math.PI * 2)
+    ctx.fill()
+
+    // dusk headlight cone projecting up the road
+    const lightLen = carH * 2.4
+    const coneTop = bottomY - carH * 0.9 - lightLen
+    const cone = ctx.createLinearGradient(cx, bottomY - carH * 0.9, cx, coneTop)
+    cone.addColorStop(0, 'rgba(255,232,175,0.30)')
+    cone.addColorStop(1, 'rgba(255,232,175,0)')
+    ctx.fillStyle = cone
+    ctx.beginPath()
+    ctx.moveTo(cx - carW * 0.24, bottomY - carH * 0.9)
+    ctx.lineTo(cx + carW * 0.24, bottomY - carH * 0.9)
+    ctx.lineTo(cx + carW * 0.62, coneTop)
+    ctx.lineTo(cx - carW * 0.62, coneTop)
+    ctx.closePath()
     ctx.fill()
 
     // nitro flames
@@ -1079,6 +1226,17 @@ export class RacingEngine {
     ctx.rotate(tilt)
     ctx.drawImage(img, -carW / 2, -carH / 2, carW, carH)
     ctx.restore()
+
+    // brake-light glow when slowing down
+    if (this.input.brake) {
+      const bg = ctx.createRadialGradient(cx, bottomY - carH * 0.28, 0, cx, bottomY - carH * 0.28, carW * 0.42)
+      bg.addColorStop(0, 'rgba(255,64,40,0.5)')
+      bg.addColorStop(1, 'rgba(255,64,40,0)')
+      ctx.fillStyle = bg
+      ctx.beginPath()
+      ctx.ellipse(cx, bottomY - carH * 0.28, carW * 0.42, carH * 0.18, 0, 0, Math.PI * 2)
+      ctx.fill()
+    }
 
     // nitro exhaust particles
     if (this.nitroActive && Math.random() < 0.9) {
