@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { PwaRegister } from "@/components/pwa-register";
@@ -57,6 +58,8 @@ export default function RootLayout({
         {children}
         <Toaster />
         <PwaRegister />
+        {/* Privacy-friendly page-view analytics — no cookies, Vercel free tier */}
+        <Analytics />
       </body>
     </html>
   );

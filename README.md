@@ -6,6 +6,10 @@ scores are saved on-device, and a tiny global leaderboard syncs through a server
 
 **Games included:** 🏎️ Turbo Rush (pseudo-3D racing) · 🧠 Brain Quiz (6 categories)
 
+**v1.3 highlights:** EN/বাংলা language toggle · offline score queue (auto-sync on reconnect) ·
+"New version" update card (SW skipWaiting) · offline banner · crash-safe game boundaries ·
+cookieless page-view analytics (Vercel free tier).
+
 ---
 
 ## 🚀 Deploy to Vercel (5 minutes, free)

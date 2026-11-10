@@ -17,23 +17,15 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { InstallPrompt } from '@/components/install-prompt'
+import { LanguageToggle } from '@/components/language-toggle'
 import { Leaderboard } from '@/components/leaderboard'
+import { GameErrorBoundary } from '@/components/error-boundary'
 import { RacingGame } from '@/components/racing-game'
 import { QuizGame } from '@/components/quiz-game'
+import { useI18n } from '@/lib/i18n'
 import { useStoredNumber } from '@/lib/game-store'
 
 type View = 'hub' | 'racing' | 'quiz'
-
-interface GameCardInfo {
-  id: string
-  title: string
-  desc: string
-  emoji: string
-  banner: string
-  best: number
-  accent: string
-  onClick: () => void
-}
 
 const COMING_SOON = [
   { emoji: '🎯', name: '2048' },
@@ -44,6 +36,7 @@ const COMING_SOON = [
 export function GameHub() {
   const [view, setView] = useState<View>('hub')
   const [boardOpen, setBoardOpen] = useState(false)
+  const { t } = useI18n()
 
   /** Reads localStorage reactively — updates instantly when a game finishes */
   const plays = useStoredNumber('gz-plays')
@@ -53,25 +46,27 @@ export function GameHub() {
   const openRacing = () => setView('racing')
   const openQuiz = () => setView('quiz')
 
-  const games: GameCardInfo[] = [
+  const games = [
     {
       id: 'racing',
-      title: 'Turbo Rush',
-      desc: 'Pseudo-3D arcade racer — dodge traffic, hit checkpoints, fire the nitro!',
+      title: t.hub.racingTitle,
+      desc: t.hub.racingDesc,
       emoji: '🏎️',
       banner: '/images/racing-banner.png',
       best: racingBest,
       accent: 'hover:border-amber-500/60',
+      aria: t.hub.racingAria,
       onClick: openRacing,
     },
     {
       id: 'quiz',
-      title: 'Brain Quiz',
-      desc: '6 categories, 60+ questions — test your knowledge and beat your best!',
+      title: t.hub.quizTitle,
+      desc: t.hub.quizDesc,
       emoji: '🧠',
       banner: '/images/quiz-banner.png',
       best: quizBest,
       accent: 'hover:border-emerald-500/60',
+      aria: t.hub.quizAria,
       onClick: openQuiz,
     },
   ]
@@ -86,20 +81,21 @@ export function GameHub() {
               <Gamepad2 className="h-6 w-6 text-stone-950" aria-hidden="true" />
             </div>
             <div>
-              <h1 className="text-lg font-extrabold leading-tight tracking-tight">Game Zone</h1>
-              <p className="text-[11px] leading-tight text-zinc-400">Play. Win. Repeat.</p>
+              <h1 className="text-lg font-extrabold leading-tight tracking-tight">{t.hub.appName}</h1>
+              <p className="text-[11px] leading-tight text-zinc-400">{t.hub.tagline}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <LanguageToggle />
             <Button
               size="sm"
               variant="outline"
               onClick={() => setBoardOpen(true)}
               className="border-zinc-700 bg-zinc-900 text-amber-300 hover:bg-zinc-800 hover:text-amber-200"
-              aria-label="Open global leaderboard"
+              aria-label={t.hub.leaderboardAria}
             >
               <Trophy className="h-4 w-4" />
-              <span className="hidden sm:inline">Leaderboard</span>
+              <span className="hidden sm:inline">{t.hub.leaderboard}</span>
             </Button>
             <InstallPrompt />
           </div>
@@ -137,22 +133,21 @@ export function GameHub() {
                   <div className="relative">
                     <Badge className="mb-2 border-amber-500/40 bg-amber-500/15 text-amber-300 hover:bg-amber-500/25">
                       <Sparkles className="mr-1 h-3 w-3" />
-                      Works offline too
+                      {t.hub.worksOffline}
                     </Badge>
-                    <h2 className="text-xl font-extrabold sm:text-2xl">Play, win, have fun! 🎮</h2>
+                    <h2 className="text-xl font-extrabold sm:text-2xl">{t.hub.heroTitle}</h2>
                     <p className="mt-1 max-w-md text-sm leading-relaxed text-zinc-400">
-                      Install on Android and play anytime — even without internet. Your scores and
-                      progress are saved right on your phone.
+                      {t.hub.heroDesc}
                     </p>
                     <div className="mt-3 flex flex-wrap gap-2 text-xs">
                       <span className="rounded-full bg-zinc-800/80 px-3 py-1 text-zinc-300">
-                        🏎️ 3D Racing
+                        {t.hub.chipRacing}
                       </span>
                       <span className="rounded-full bg-zinc-800/80 px-3 py-1 text-zinc-300">
-                        🧠 Quiz
+                        {t.hub.chipQuiz}
                       </span>
                       <span className="rounded-full bg-zinc-800/80 px-3 py-1 text-zinc-300">
-                        📶 Offline mode
+                        {t.hub.chipOffline}
                       </span>
                     </div>
                   </div>
@@ -165,30 +160,30 @@ export function GameHub() {
                   <CardContent className="flex flex-col items-center gap-0.5 p-3 text-center">
                     <Gauge className="mb-1 h-4 w-4 text-amber-400" aria-hidden="true" />
                     <span className="text-lg font-bold text-amber-300">{racingBest}</span>
-                    <span className="text-[10px] text-zinc-400 sm:text-xs">Racing best</span>
+                    <span className="text-[10px] text-zinc-400 sm:text-xs">{t.hub.statRacing}</span>
                   </CardContent>
                 </Card>
                 <Card className="border-zinc-800 bg-zinc-900/60">
                   <CardContent className="flex flex-col items-center gap-0.5 p-3 text-center">
                     <Brain className="mb-1 h-4 w-4 text-emerald-400" aria-hidden="true" />
                     <span className="text-lg font-bold text-emerald-300">{quizBest}</span>
-                    <span className="text-[10px] text-zinc-400 sm:text-xs">Quiz best</span>
+                    <span className="text-[10px] text-zinc-400 sm:text-xs">{t.hub.statQuiz}</span>
                   </CardContent>
                 </Card>
                 <Card className="border-zinc-800 bg-zinc-900/60">
                   <CardContent className="flex flex-col items-center gap-0.5 p-3 text-center">
                     <Gamepad2 className="mb-1 h-4 w-4 text-teal-400" aria-hidden="true" />
                     <span className="text-lg font-bold text-teal-300">{plays}</span>
-                    <span className="text-[10px] text-zinc-400 sm:text-xs">Total plays</span>
+                    <span className="text-[10px] text-zinc-400 sm:text-xs">{t.hub.statPlays}</span>
                   </CardContent>
                 </Card>
               </div>
 
               {/* Games */}
-              <section aria-label="Games">
+              <section aria-label={t.hub.gamesTitle}>
                 <h3 className="mb-3 flex items-center gap-2 text-base font-bold">
                   <Gamepad2 className="h-5 w-5 text-amber-400" />
-                  Games
+                  {t.hub.gamesTitle}
                 </h3>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {games.map((game) => (
@@ -205,7 +200,7 @@ export function GameHub() {
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') game.onClick()
                         }}
-                        aria-label={`Play ${game.title}`}
+                        aria-label={game.aria}
                       >
                         <div className="relative aspect-[16/8] w-full overflow-hidden">
                           <img
@@ -215,14 +210,14 @@ export function GameHub() {
                             loading="lazy"
                           />
                           <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2.5 py-0.5 text-[11px] font-semibold text-amber-300 backdrop-blur-sm">
-                            {game.emoji} Ready to play
+                            {game.emoji} {t.hub.readyToPlay}
                           </span>
                         </div>
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between gap-2">
                             <h4 className="text-base font-bold">{game.title}</h4>
                             <span className="text-[11px] text-zinc-400">
-                              Best: {game.best}
+                              {t.common.best} {game.best}
                             </span>
                           </div>
                           <p className="mt-1 text-xs leading-relaxed text-zinc-400">{game.desc}</p>
@@ -235,7 +230,7 @@ export function GameHub() {
                             }}
                           >
                             <Play className="mr-1 h-4 w-4" />
-                            Play now
+                            {t.common.playNow}
                           </Button>
                         </CardContent>
                       </Card>
@@ -245,10 +240,10 @@ export function GameHub() {
               </section>
 
               {/* Coming soon */}
-              <section aria-label="Coming soon">
+              <section aria-label={t.hub.comingSoon}>
                 <h3 className="mb-3 flex items-center gap-2 text-base font-bold text-zinc-300">
                   <Lock className="h-4 w-4 text-zinc-500" />
-                  Coming soon
+                  {t.hub.comingSoon}
                 </h3>
                 <div className="grid grid-cols-3 gap-2 sm:gap-3">
                   {COMING_SOON.map((g) => (
@@ -258,7 +253,7 @@ export function GameHub() {
                     >
                       <span className="text-2xl grayscale">{g.emoji}</span>
                       <span className="text-xs font-semibold text-zinc-400">{g.name}</span>
-                      <span className="text-[10px] text-zinc-500">Soon</span>
+                      <span className="text-[10px] text-zinc-500">{t.hub.soon}</span>
                     </div>
                   ))}
                 </div>
@@ -269,17 +264,17 @@ export function GameHub() {
                 <CardContent className="flex flex-col gap-2 p-4">
                   <div className="flex items-center gap-2 text-sm font-bold text-teal-300">
                     <Smartphone className="h-4 w-4" />
-                    How to install on Android
+                    {t.hub.installTitle}
                   </div>
                   <ol className="list-inside list-decimal space-y-1 text-xs leading-relaxed text-zinc-400">
-                    <li>Open this page in the Chrome browser</li>
-                    <li>Tap the &quot;Install&quot; button above</li>
-                    <li>Or open the menu (⋮) → &quot;Add to Home screen&quot;</li>
-                    <li>Launch it like a real app from your home screen — works offline too!</li>
+                    <li>{t.hub.installStep1}</li>
+                    <li>{t.hub.installStep2}</li>
+                    <li>{t.hub.installStep3}</li>
+                    <li>{t.hub.installStep4}</li>
                   </ol>
                   <div className="flex items-center gap-2 text-xs text-zinc-500">
                     <WifiOff className="h-3.5 w-3.5 text-teal-400" />
-                    After the first load, all games run completely offline
+                    {t.hub.installNote}
                   </div>
                 </CardContent>
               </Card>
@@ -294,13 +289,19 @@ export function GameHub() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.22 }}
             >
-              <QuizGame onExit={() => setView('hub')} />
+              <GameErrorBoundary label={t.hub.quizTitle}>
+                <QuizGame onExit={() => setView('hub')} />
+              </GameErrorBoundary>
             </motion.div>
           )}
         </AnimatePresence>
 
         {/* Racing is a full-screen overlay — keep it OUTSIDE animated wrappers so `fixed` works */}
-        {view === 'racing' && <RacingGame onExit={() => setView('hub')} />}
+        {view === 'racing' && (
+          <GameErrorBoundary label={t.hub.racingTitle}>
+            <RacingGame onExit={() => setView('hub')} />
+          </GameErrorBoundary>
+        )}
       </main>
 
       {/* Global leaderboard dialog */}
@@ -309,10 +310,10 @@ export function GameHub() {
       {/* Sticky footer */}
       <footer className="mt-auto border-t border-zinc-800/80 bg-stone-950/95">
         <div className="mx-auto flex w-full max-w-3xl flex-col items-center justify-between gap-1 px-4 py-3 text-center sm:flex-row sm:text-left">
-          <p className="text-xs text-zinc-500">Game Zone © 2025 • Version 1.2</p>
+          <p className="text-xs text-zinc-500">{t.hub.footerCopyright}</p>
           <div className="flex items-center gap-1.5 text-xs text-zinc-500">
             <WifiOff className="h-3.5 w-3.5 text-teal-500" />
-            Offline-ready PWA
+            {t.hub.footerOffline}
           </div>
         </div>
       </footer>

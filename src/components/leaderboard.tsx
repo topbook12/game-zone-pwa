@@ -23,6 +23,7 @@ import {
   type ScoreRow,
   type TopCache,
 } from '@/lib/leaderboard'
+import { useI18n } from '@/lib/i18n'
 
 interface Props {
   open: boolean
@@ -42,7 +43,7 @@ function formatWhen(ts: number): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-function TopList({ cache }: { cache: TopCache | undefined }) {
+function TopList({ cache, emptyLabel }: { cache: TopCache | undefined; emptyLabel: string }) {
   if (!cache) {
     return (
       <div className="flex flex-col gap-2 py-2">
@@ -54,11 +55,7 @@ function TopList({ cache }: { cache: TopCache | undefined }) {
   }
   const rows = cache.rows
   if (rows.length === 0) {
-    return (
-      <div className="py-8 text-center text-sm text-zinc-400">
-        No scores yet — be the first champion! 🏆
-      </div>
-    )
+    return <div className="py-8 text-center text-sm text-zinc-400">{emptyLabel}</div>
   }
   return (
     <ol className="flex max-h-[46dvh] flex-col gap-1.5 overflow-y-auto py-1 pr-1 [scrollbar-width:thin]">
@@ -85,6 +82,7 @@ function TopList({ cache }: { cache: TopCache | undefined }) {
 
 /** Global leaderboard dialog — reads through the offline cache when offline. */
 export function Leaderboard({ open, onOpenChange }: Props) {
+  const { t } = useI18n()
   const [tab, setTab] = useState<GameId>('racing')
   /** Scores per game — undefined = still loading (skeleton). */
   const [byGame, setByGame] = useState<Partial<Record<GameId, TopCache>>>({})
@@ -134,11 +132,9 @@ export function Leaderboard({ open, onOpenChange }: Props) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg font-extrabold">
             <Trophy className="h-5 w-5 text-amber-400" />
-            Global Leaderboard
+            {t.board.title}
           </DialogTitle>
-          <DialogDescription className="text-xs text-zinc-400">
-            Top 10 players worldwide. Updates every 30 seconds.
-          </DialogDescription>
+          <DialogDescription className="text-xs text-zinc-400">{t.board.desc}</DialogDescription>
         </DialogHeader>
 
         {/* Player name */}
@@ -153,8 +149,8 @@ export function Leaderboard({ open, onOpenChange }: Props) {
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && saveName()}
                 className="h-8 border-zinc-700 bg-zinc-950 text-sm"
-                aria-label="Your player name"
-                placeholder="Your name"
+                aria-label={t.board.nameAria}
+                placeholder={t.board.namePlaceholder}
               />
               <Button
                 size="sm"
@@ -172,13 +168,13 @@ export function Leaderboard({ open, onOpenChange }: Props) {
                 variant="ghost"
                 className="h-8 px-2 text-zinc-400 hover:bg-zinc-800 hover:text-amber-300"
                 onClick={() => setEditing(true)}
-                aria-label="Edit player name"
+                aria-label={t.board.editNameAria}
               >
                 <Pencil className="h-3.5 w-3.5" />
               </Button>
               {savedFlash && (
                 <Badge className="border-emerald-500/40 bg-emerald-500/15 text-emerald-300">
-                  Saved
+                  {t.board.saved}
                 </Badge>
               )}
             </>
@@ -191,21 +187,21 @@ export function Leaderboard({ open, onOpenChange }: Props) {
               value="racing"
               className="data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-300"
             >
-              🏎️ Turbo Rush
+              {t.board.tabRacing}
             </TabsTrigger>
             <TabsTrigger
               value="quiz"
               className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300"
             >
-              🧠 Brain Quiz
+              {t.board.tabQuiz}
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="racing">
-            <TopList cache={byGame.racing} />
+            <TopList cache={byGame.racing} emptyLabel={t.board.empty} />
           </TabsContent>
           <TabsContent value="quiz">
-            <TopList cache={byGame.quiz} />
+            <TopList cache={byGame.quiz} emptyLabel={t.board.empty} />
           </TabsContent>
         </Tabs>
 
@@ -213,11 +209,11 @@ export function Leaderboard({ open, onOpenChange }: Props) {
           <span className="flex items-center gap-1.5">
             {stale ? (
               <>
-                <CloudOff className="h-3.5 w-3.5 text-zinc-500" /> Showing saved scores (offline)
+                <CloudOff className="h-3.5 w-3.5 text-zinc-500" /> {t.board.stale}
               </>
             ) : (
               <>
-                <Check className="h-3.5 w-3.5 text-emerald-500" /> Live from server
+                <Check className="h-3.5 w-3.5 text-emerald-500" /> {t.board.live}
               </>
             )}
           </span>
@@ -226,10 +222,10 @@ export function Leaderboard({ open, onOpenChange }: Props) {
             variant="ghost"
             className="h-8 text-zinc-400 hover:bg-zinc-800 hover:text-amber-300"
             onClick={refresh}
-            aria-label="Refresh leaderboard"
+            aria-label={t.board.refreshAria}
           >
             <RefreshCw className={`h-3.5 w-3.5 ${!cache ? 'animate-spin' : ''}`} />
-            Refresh
+            {t.board.refresh}
           </Button>
         </div>
       </DialogContent>

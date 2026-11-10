@@ -3,20 +3,25 @@
 **Principle:** every phase must stay cost-effective (client-first, free tiers, no idle servers)
 and ship *premium-feeling* features players love. One release per week is enough — quality > speed.
 
-> Current status (Day 0): Racing ✅ · Quiz ✅ · PWA offline ✅ · Global leaderboard ✅ · Vercel deploy ✅
+> Current status (Day 10): Racing ✅ · Quiz ✅ · PWA offline ✅ · Global leaderboard ✅ · Vercel deploy ✅ · **Phase 1 hardening ✅ (v1.3)**
 
 ---
 
-## Phase 1 — Foundation hardening (Day 1–10) ✅ Week 1
-- [ ] **Day 1–2:** Vercel live + custom domain check, PWA install test on 2–3 real Android devices
-- [ ] **Day 3–4:** Offline audit — airplane-mode test of both games, SW update flow (skipWaiting toast)
-- [ ] **Day 5:** Localized app string file (English now, Bangla toggle ready)
-- [ ] **Day 6–7:** Bug bash from first real players, fix top 5 issues
-- [ ] **Day 8–10:** Privacy-friendly analytics (page-view only, self-hosted or Vercel Analytics free tier)
+## Phase 1 — Foundation hardening (Day 1–10) ✅ DONE — shipped as v1.3
+- [x] **Day 1–2:** Vercel deploy ready — vercel.json, Turso env wiring, 3-step guide in README
+- [ ] **Day 1–2:** Custom domain — needs a purchased domain (manual, when ready)
+- [ ] **Day 1–2:** PWA install test on 2–3 real Android devices (manual — guide in README)
+- [x] **Day 3–4:** Offline audit — airplane-mode simulation passed: hub, both games, leaderboard cache, score queue auto-flush on reconnect
+- [x] **Day 3–4:** SW update flow — waiting-worker detection + "New version — Refresh now" card (SKIP_WAITING, player stays in control)
+- [x] **Day 4:** Offline indicator — amber "You are offline — games still work" banner
+- [x] **Day 5:** Localized string file — full EN + বাংলা dictionaries (`src/lib/i18n.ts`), EN/বাংলা toggle in header, persists in localStorage
+- [x] **Day 6–7:** Bug bash round 1 — fixed duplicate score flush on reconnect race, graceful 502 when DB env missing, `fmt` export build error
+- [x] **Day 6–7:** `GameErrorBoundary` — a crashed game shows a friendly reload card instead of a white screen (low-end device safety)
+- [x] **Day 8–10:** Privacy-friendly analytics — `@vercel/analytics`, page-view only, cookieless, Vercel free tier
 
-**Milestone:** a stable, installable, offline-proof v1.2 in real users' hands.
+**Milestone:** ✅ stable, installable, offline-proof v1.3 — ready for first real players.
 
-## Phase 2 — Content & retention (Day 11–25)
+## Phase 2 — Content & retention (Day 11–25) ← NEXT
 - [ ] Quiz question packs v2: Sports, Movies, Bangladesh GK, Math blitz (bundle client-side = $0)
 - [ ] Daily challenge: seeded daily seed (same 10 questions/track for everyone, client-computed)
 - [ ] Achievements (first win, 10 games, top-10 leaderboard…), stored in localStorage

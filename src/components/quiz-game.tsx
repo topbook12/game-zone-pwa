@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import { fmt, useI18n } from '@/lib/i18n'
 import { readStoredNumber, useStoredNumber, writeStoredNumber, STORAGE_KEYS } from '@/lib/game-store'
 import { submitScore, type SubmitOutcome } from '@/lib/leaderboard'
 import {
@@ -40,6 +41,7 @@ interface ResultState {
 }
 
 export function QuizGame({ onExit }: QuizGameProps) {
+  const { t } = useI18n()
   const [phase, setPhase] = useState<Phase>('select')
   const [category, setCategory] = useState<QuizCategoryId>('gk')
   const [questions, setQuestions] = useState<QuizQuestion[]>([])
@@ -67,6 +69,7 @@ export function QuizGame({ onExit }: QuizGameProps) {
     setTimeLeft(QUESTION_TIME)
     setGained(0)
     setResult(null)
+    setSync(null)
     setPhase('play')
   }, [])
 
@@ -149,19 +152,17 @@ export function QuizGame({ onExit }: QuizGameProps) {
             className="border-zinc-700 bg-zinc-900/80 text-zinc-200 hover:bg-zinc-800 hover:text-amber-300"
           >
             <ChevronLeft className="h-4 w-4" />
-            Back to hub
+            {t.common.backToHub}
           </Button>
           <div className="flex items-center gap-1.5 text-sm text-zinc-400">
             <Brain className="h-4 w-4 text-amber-400" />
-            Question bank: <span className="font-semibold text-amber-300">60+</span>
+            {t.quiz.bankLabel} <span className="font-semibold text-amber-300">60+</span>
           </div>
         </div>
 
         <div className="text-center">
-          <h2 className="text-2xl font-extrabold text-amber-300">🧠 Brain Quiz</h2>
-          <p className="mt-1 text-sm text-zinc-400">
-            Pick a category — 15 seconds per question, faster answers earn bonus points!
-          </p>
+          <h2 className="text-2xl font-extrabold text-amber-300">🧠 {t.hub.quizTitle}</h2>
+          <p className="mt-1 text-sm text-zinc-400">{t.quiz.selectDesc}</p>
         </div>
 
         <div className="mx-auto grid w-full max-w-[560px] grid-cols-2 gap-3 sm:grid-cols-3">
@@ -170,7 +171,7 @@ export function QuizGame({ onExit }: QuizGameProps) {
               key={cat.id}
               onClick={() => startQuiz(cat.id)}
               className={`group flex flex-col items-center gap-1 rounded-2xl border-2 bg-zinc-900/80 p-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:bg-zinc-800/90 active:scale-[0.98] ${cat.accent}`}
-              aria-label={`Play ${cat.name} quiz`}
+              aria-label={fmt(t.quiz.playCatAria, { name: cat.name })}
             >
               <span className="text-3xl transition-transform duration-200 group-hover:scale-110">
                 {cat.emoji}
@@ -190,12 +191,12 @@ export function QuizGame({ onExit }: QuizGameProps) {
     const accuracy = Math.round((result.correct / result.total) * 100)
     const msg =
       accuracy >= 90
-        ? 'Outstanding! You are a genius! 🌟'
+        ? t.quiz.msgOutstanding
         : accuracy >= 70
-          ? 'Excellent! Very well played! 🎉'
+          ? t.quiz.msgExcellent
           : accuracy >= 50
-            ? 'Good! A little more practice and you will be the best! 💪'
-            : 'No worries, practice makes perfect! 📚'
+            ? t.quiz.msgGood
+            : t.quiz.msgPractice
 
     return (
       <div className="flex flex-col items-center gap-5 py-4 text-center">
@@ -205,13 +206,13 @@ export function QuizGame({ onExit }: QuizGameProps) {
           </div>
         </div>
         <div>
-          <h2 className="text-2xl font-extrabold text-zinc-100">Quiz complete!</h2>
+          <h2 className="text-2xl font-extrabold text-zinc-100">{t.quiz.complete}</h2>
           <p className="mt-1 text-sm text-zinc-400">{msg}</p>
         </div>
 
         {result.isBest && (
           <div className="rounded-full border border-amber-400/50 bg-amber-500/15 px-4 py-1.5 text-sm font-semibold text-amber-300">
-            🎊 New record!
+            {t.quiz.newRecord}
           </div>
         )}
 
@@ -219,14 +220,14 @@ export function QuizGame({ onExit }: QuizGameProps) {
           <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/70 p-4">
             <div className="flex items-center justify-center gap-1 text-[11px] text-zinc-400">
               <Star className="h-3 w-3 text-amber-400" />
-              Score
+              {t.common.score}
             </div>
             <div className="mt-1 text-2xl font-bold text-amber-300">{result.score}</div>
           </div>
           <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/70 p-4">
             <div className="flex items-center justify-center gap-1 text-[11px] text-zinc-400">
               <CheckCircle2 className="h-3 w-3 text-emerald-400" />
-              Correct
+              {t.quiz.correct}
             </div>
             <div className="mt-1 text-2xl font-bold text-emerald-300">
               {result.correct}/{result.total}
@@ -235,28 +236,29 @@ export function QuizGame({ onExit }: QuizGameProps) {
           <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/70 p-4">
             <div className="flex items-center justify-center gap-1 text-[11px] text-zinc-400">
               <Target className="h-3 w-3 text-teal-400" />
-              Accuracy
+              {t.quiz.accuracy}
             </div>
             <div className="mt-1 text-2xl font-bold text-teal-300">{accuracy}%</div>
           </div>
         </div>
 
         <p className="text-sm text-zinc-500">
-          Best score (this category):{' '}
+          {t.quiz.bestCat}{' '}
           <span className="font-semibold text-amber-300">{Math.max(best, result.score)}</span>
         </p>
 
         <div className="h-5 text-xs font-semibold">
           {sync?.status === 'synced' && (
             <span className="text-emerald-400">
-              ☁ Synced to global leaderboard{typeof sync.rank === 'number' ? ` — rank #${sync.rank}` : ''}
+              {t.common.syncSynced}
+              {typeof sync.rank === 'number' ? ' ' + fmt(t.common.syncRank, { n: sync.rank }) : ''}
             </span>
           )}
           {sync?.status === 'queued' && (
-            <span className="text-amber-300">⏳ Saved — will sync when back online</span>
+            <span className="text-amber-300">{t.common.syncQueued}</span>
           )}
           {sync?.status === 'offline' && (
-            <span className="text-amber-300">📴 Offline — score will sync automatically</span>
+            <span className="text-amber-300">{t.common.syncOffline}</span>
           )}
         </div>
 
@@ -266,7 +268,7 @@ export function QuizGame({ onExit }: QuizGameProps) {
             className="bg-amber-500 font-bold text-stone-950 hover:bg-amber-400"
           >
             <RotateCcw className="h-4 w-4" />
-            Play again
+            {t.quiz.playAgain}
           </Button>
           <Button
             onClick={() => setPhase('select')}
@@ -274,7 +276,7 @@ export function QuizGame({ onExit }: QuizGameProps) {
             className="border-zinc-600 bg-zinc-900 text-zinc-200 hover:bg-zinc-800"
           >
             <ListChecks className="h-4 w-4" />
-            Change category
+            {t.quiz.changeCategory}
           </Button>
           <Button
             onClick={onExit}
@@ -282,7 +284,7 @@ export function QuizGame({ onExit }: QuizGameProps) {
             className="border-zinc-600 bg-zinc-900 text-zinc-200 hover:bg-zinc-800"
           >
             <ChevronLeft className="h-4 w-4" />
-            Back to hub
+            {t.common.backToHub}
           </Button>
         </div>
       </div>
@@ -299,9 +301,11 @@ export function QuizGame({ onExit }: QuizGameProps) {
       {/* progress */}
       <div className="flex items-center justify-between text-sm">
         <span className="font-semibold text-zinc-300">
-          Question {qIndex + 1}/{questions.length}
+          {fmt(t.quiz.questionOf, { a: qIndex + 1, b: questions.length })}
         </span>
-        <span className="font-semibold text-amber-300">Score: {score}</span>
+        <span className="font-semibold text-amber-300">
+          {t.quiz.scoreLabel} {score}
+        </span>
       </div>
       <Progress
         value={((qIndex + (answered !== null ? 1 : 0)) / questions.length) * 100}
@@ -361,7 +365,7 @@ export function QuizGame({ onExit }: QuizGameProps) {
               onClick={() => handleAnswer(idx)}
               disabled={answered !== null}
               className={`flex items-center justify-between gap-3 rounded-xl border-2 px-4 py-3.5 text-left text-sm font-semibold transition-all duration-150 active:scale-[0.98] disabled:cursor-default sm:text-base ${cls}`}
-              aria-label={`Answer ${idx + 1}: ${opt}`}
+              aria-label={fmt(t.quiz.answerAria, { n: idx + 1, opt })}
             >
               <span className="flex items-center gap-3">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-zinc-500/40 text-xs opacity-80">
@@ -388,10 +392,10 @@ export function QuizGame({ onExit }: QuizGameProps) {
           }`}
         >
           {answered === current.answer
-            ? `✅ Correct! +${gained} points`
+            ? fmt(t.quiz.correctPts, { n: gained })
             : answered === -1
-              ? `⏰ Time is up! Correct answer: ${current.options[current.answer]}`
-              : `❌ Wrong! Correct answer: ${current.options[current.answer]}`}
+              ? fmt(t.quiz.timeUp, { ans: current.options[current.answer] })
+              : fmt(t.quiz.wrong, { ans: current.options[current.answer] })}
         </div>
       )}
     </div>
@@ -400,10 +404,11 @@ export function QuizGame({ onExit }: QuizGameProps) {
 
 /** Best-score badge for a category card — separate component so map stays hooks-safe */
 function BestScoreBadge({ catId }: { catId: QuizCategoryId }) {
+  const { t } = useI18n()
   const best = useStoredNumber(STORAGE_KEYS.quizBest(catId))
   return (
     <span className="mt-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] text-amber-300">
-      Best: {best}
+      {t.quiz.bestBadge} {best}
     </span>
   )
 }

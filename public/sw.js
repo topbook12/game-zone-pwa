@@ -1,5 +1,5 @@
 /* Game Zone — Service Worker (PWA offline support) */
-const CACHE_NAME = 'game-zone-v5';
+const CACHE_NAME = 'game-zone-v6';
 const CORE_ASSETS = [
   '/',
   '/manifest.json',
@@ -11,14 +11,19 @@ const CORE_ASSETS = [
   '/images/quiz-banner.png',
 ];
 
-// Install: cache core assets
+// Install: cache core assets (no skipWaiting here — the app shows a
+// "new version" card and calls SKIP_WAITING so the player stays in control)
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(CACHE_NAME)
       .then((cache) => cache.addAll(CORE_ASSETS))
-      .then(() => self.skipWaiting())
   );
+});
+
+// Message: allow the page to activate a waiting worker instantly
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 // Activate: purge old caches

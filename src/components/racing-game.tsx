@@ -24,6 +24,7 @@ import { SoundEngine } from '@/lib/racing/audio'
 import type { GameEvent, GamePhase, GameResult, HudData } from '@/lib/racing/types'
 import { readStoredNumber, writeStoredNumber, useStoredNumber, STORAGE_KEYS } from '@/lib/game-store'
 import { submitScore, type SubmitOutcome } from '@/lib/leaderboard'
+import { fmt, useI18n } from '@/lib/i18n'
 
 const RING_R = 42
 const RING_C = 2 * Math.PI * RING_R
@@ -51,6 +52,7 @@ export interface RacingGameProps {
 }
 
 export function RacingGame({ onExit }: RacingGameProps) {
+  const { t } = useI18n()
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const engineRef = useRef<RacingEngine | null>(null)
   const soundRef = useRef<SoundEngine | null>(null)
@@ -361,7 +363,7 @@ export function RacingGame({ onExit }: RacingGameProps) {
       className="fixed inset-0 z-50 touch-none select-none overflow-hidden bg-[#140b06]"
       onContextMenu={(e) => e.preventDefault()}
       role="application"
-      aria-label="Turbo Rush racing game"
+      aria-label={t.racing.appAria}
     >
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
 
@@ -372,12 +374,12 @@ export function RacingGame({ onExit }: RacingGameProps) {
           <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
             {/* score */}
             <div className="rounded-xl border border-white/15 bg-black/40 px-3 py-1.5 backdrop-blur-md">
-              <div className="text-[9px] font-bold tracking-[0.2em] text-white/60">SCORE</div>
+              <div className="text-[9px] font-bold tracking-[0.2em] text-white/60">{t.racing.hudScore}</div>
               <span ref={scoreRef} className="text-xl font-black tabular-nums text-amber-300">
                 0
               </span>
               <div className="mt-0.5 text-[10px] font-semibold text-white/70">
-                Overtakes <span ref={ovtRef} className="text-white">0</span>
+                {t.racing.hudOvertakes} <span ref={ovtRef} className="text-white">0</span>
               </div>
             </div>
 
@@ -386,7 +388,7 @@ export function RacingGame({ onExit }: RacingGameProps) {
               ref={timeCardRef}
               className="rounded-xl border border-white/15 bg-black/40 px-5 py-1.5 text-center backdrop-blur-md"
             >
-              <div className="text-[9px] font-bold tracking-[0.2em] text-white/60">TIME</div>
+              <div className="text-[9px] font-bold tracking-[0.2em] text-white/60">{t.racing.hudTime}</div>
               <span ref={timeNumRef} className="text-2xl font-black tabular-nums text-white">
                 60
               </span>
@@ -394,13 +396,13 @@ export function RacingGame({ onExit }: RacingGameProps) {
 
             {/* buttons */}
             <div className="pointer-events-auto flex gap-2">
-              <button onClick={togglePause} className={iconBtn} aria-label="Pause game">
+              <button onClick={togglePause} className={iconBtn} aria-label={t.racing.pauseAria}>
                 <Pause className="h-5 w-5" />
               </button>
-              <button onClick={toggleMute} className={iconBtn} aria-label={muted ? 'Unmute' : 'Mute'}>
+              <button onClick={toggleMute} className={iconBtn} aria-label={muted ? t.racing.unmuteAria : t.racing.muteAria}>
                 {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
               </button>
-              <button onClick={toggleFullscreen} className={iconBtn} aria-label="Toggle fullscreen">
+              <button onClick={toggleFullscreen} className={iconBtn} aria-label={t.racing.fsAria}>
                 {fullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
               </button>
             </div>
@@ -428,7 +430,7 @@ export function RacingGame({ onExit }: RacingGameProps) {
             <div className="absolute inset-x-0 top-[136px] flex justify-center">
               <div className="flex items-center gap-2 rounded-full bg-black/50 px-4 py-1.5 text-xs font-semibold text-white/85 backdrop-blur-md">
                 <Smartphone className="h-3.5 w-3.5 animate-pulse" />
-                Rotate your phone for the best experience
+                {t.racing.rotate}
               </div>
             </div>
           )}
@@ -436,14 +438,14 @@ export function RacingGame({ onExit }: RacingGameProps) {
           {/* bottom-left stats */}
           <div className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-3 sm:left-5">
             <div className="rounded-xl border border-white/15 bg-black/40 px-3 py-1.5 backdrop-blur-md">
-              <div className="text-[9px] font-bold tracking-[0.2em] text-white/60">DISTANCE</div>
+              <div className="text-[9px] font-bold tracking-[0.2em] text-white/60">{t.racing.hudDistance}</div>
               <span ref={distRef} className="text-sm font-bold tabular-nums text-white/90">
                 0.00 km
               </span>
             </div>
             {!touchMode && (
               <div className="mt-2 hidden text-[10px] font-medium tracking-wide text-white/50 sm:block">
-                ↑ Gas · ← → Steer · ↓ Brake · SHIFT Nitro · P Pause
+                {t.racing.kbHint}
               </div>
             )}
           </div>
@@ -458,7 +460,7 @@ export function RacingGame({ onExit }: RacingGameProps) {
                   style={{ height: '50%', background: 'linear-gradient(to top, #fbbf24, #ea580c)' }}
                 />
               </div>
-              <span className="text-[8px] font-black tracking-widest text-amber-300">NITRO</span>
+              <span className="text-[8px] font-black tracking-widest text-amber-300">{t.racing.hudNitro}</span>
             </div>
             <div className="relative h-[96px] w-[96px] sm:h-[116px] sm:w-[116px]">
               <svg viewBox="0 0 104 104" className="h-full w-full drop-shadow-lg">
@@ -488,7 +490,7 @@ export function RacingGame({ onExit }: RacingGameProps) {
                 <span ref={speedNumRef} className="text-2xl font-black tabular-nums text-white sm:text-3xl">
                   0
                 </span>
-                <span className="text-[8px] font-bold tracking-[0.2em] text-white/60">KM/H</span>
+                <span className="text-[8px] font-bold tracking-[0.2em] text-white/60">{t.racing.hudKmh}</span>
               </div>
             </div>
           </div>
@@ -501,14 +503,14 @@ export function RacingGame({ onExit }: RacingGameProps) {
           <div className="absolute bottom-[max(4.5rem,calc(env(safe-area-inset-bottom)+4.5rem))] left-4 z-20 flex gap-3">
             <button
               {...bind('left')}
-              aria-label="Steer left"
+              aria-label={t.racing.steerLeftAria}
               className="flex h-[74px] w-[74px] items-center justify-center rounded-full border border-white/25 bg-black/40 text-white backdrop-blur-md transition active:scale-90 active:bg-white/25"
             >
               <SteerLeft className="h-9 w-9" />
             </button>
             <button
               {...bind('right')}
-              aria-label="Steer right"
+              aria-label={t.racing.steerRightAria}
               className="flex h-[74px] w-[74px] items-center justify-center rounded-full border border-white/25 bg-black/40 text-white backdrop-blur-md transition active:scale-90 active:bg-white/25"
             >
               <SteerRight className="h-9 w-9" />
@@ -517,19 +519,19 @@ export function RacingGame({ onExit }: RacingGameProps) {
           <div className="absolute bottom-[max(4.5rem,calc(env(safe-area-inset-bottom)+4.5rem))] right-4 z-20 flex items-end gap-3">
             <button
               {...bind('brake')}
-              aria-label="Brake"
+              aria-label={t.racing.brakeAria}
               className="flex h-16 w-20 items-center justify-center gap-1 rounded-2xl border border-red-300/40 bg-red-600/55 text-xs font-black tracking-widest text-white backdrop-blur-md transition active:scale-90 active:bg-red-500/70"
             >
               <Octagon className="h-4 w-4" />
-              BRAKE
+              {t.racing.brake}
             </button>
             <button
               {...bind('nitro')}
-              aria-label="Nitro boost"
+              aria-label={t.racing.nitroAria}
               className="flex h-20 w-20 flex-col items-center justify-center gap-0.5 rounded-full border border-amber-300/50 bg-amber-500/60 text-xs font-black tracking-widest text-stone-950 backdrop-blur-md transition active:scale-90 active:bg-amber-400/80"
             >
               <Zap className="h-6 w-6" />
-              NITRO
+              {t.racing.nitro}
             </button>
           </div>
         </>
@@ -549,7 +551,7 @@ export function RacingGame({ onExit }: RacingGameProps) {
             <button
               onClick={onExit}
               className={iconBtn + ' absolute left-3 top-3 pt-[max(0px,env(safe-area-inset-top))]'}
-              aria-label="Back to game hub"
+              aria-label={t.racing.backAria}
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
@@ -557,7 +559,7 @@ export function RacingGame({ onExit }: RacingGameProps) {
             <div className="flex w-full max-w-md flex-col items-center gap-5 text-center">
               <div>
                 <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-500/15 px-3 py-1 text-[10px] font-bold tracking-[0.25em] text-amber-300">
-                  OFFLINE READY · PWA
+                  {t.racing.menuBadge}
                 </div>
                 <h1 className="text-5xl font-black italic tracking-tight sm:text-6xl">
                   <span className="bg-gradient-to-r from-amber-300 via-orange-400 to-red-500 bg-clip-text text-transparent drop-shadow-[0_4px_18px_rgba(234,88,12,0.45)]">
@@ -571,7 +573,7 @@ export function RacingGame({ onExit }: RacingGameProps) {
 
               <div className="flex items-center gap-2 rounded-full border border-white/15 bg-black/40 px-4 py-1.5 text-sm text-white/85 backdrop-blur-md">
                 <Trophy className="h-4 w-4 text-amber-400" />
-                Best score:{' '}
+                {t.racing.bestScore}{' '}
                 <span className="font-black text-amber-300">
                   {storedBest.toLocaleString('en-US')}
                 </span>
@@ -582,26 +584,25 @@ export function RacingGame({ onExit }: RacingGameProps) {
                 className="h-14 rounded-2xl bg-gradient-to-b from-orange-400 to-red-500 px-12 text-lg font-black tracking-[0.15em] text-white shadow-[0_12px_36px_-8px_rgba(234,88,12,0.8)] transition hover:brightness-110 active:scale-95"
               >
                 <Play className="mr-2 h-5 w-5 fill-white" />
-                START RACE
+                {t.racing.startRace}
               </Button>
 
               <div className="grid w-full gap-2 text-left text-[11px] leading-relaxed text-white/65 sm:grid-cols-2">
                 <div className="rounded-xl border border-white/10 bg-black/35 p-3 backdrop-blur-sm">
-                  <div className="mb-1 text-[10px] font-black tracking-[0.2em] text-amber-300">KEYBOARD</div>
-                  ↑ / W Accelerate · ← → Steer
-                  <br />↓ / S Brake · SHIFT Nitro · P Pause
+                  <div className="mb-1 text-[10px] font-black tracking-[0.2em] text-amber-300">{t.racing.kbTitle}</div>
+                  {t.racing.kbLine1}
+                  <br /> {t.racing.kbLine2}
                 </div>
                 <div className="rounded-xl border border-white/10 bg-black/35 p-3 backdrop-blur-sm">
-                  <div className="mb-1 text-[10px] font-black tracking-[0.2em] text-amber-300">TOUCH</div>
-                  On-screen pads to steer
+                  <div className="mb-1 text-[10px] font-black tracking-[0.2em] text-amber-300">{t.racing.touchTitle}</div>
+                  {t.racing.touchLine1}
                   <br />
-                  Auto-gas ON · tap NITRO to boost
+                  {t.racing.touchLine2}
                 </div>
               </div>
 
               <p className="max-w-sm text-[11px] leading-relaxed text-white/50">
-                Reach checkpoints to extend your 60-second timer. Dodge traffic, pass cars to charge
-                nitro — every crash costs precious speed!
+                {t.racing.menuDesc}
               </p>
             </div>
           </motion.div>
@@ -635,27 +636,27 @@ export function RacingGame({ onExit }: RacingGameProps) {
             className="absolute inset-0 z-30 flex items-center justify-center bg-black/70 backdrop-blur-sm"
           >
             <div className="flex w-full max-w-xs flex-col items-center gap-4 p-6 text-center">
-              <h2 className="text-3xl font-black tracking-[0.2em] text-white">PAUSED</h2>
+              <h2 className="text-3xl font-black tracking-[0.2em] text-white">{t.racing.paused}</h2>
               <div className="flex w-full flex-col gap-2">
                 <Button
                   onClick={togglePause}
                   className="h-12 bg-gradient-to-b from-orange-400 to-red-500 text-base font-black tracking-widest text-white hover:brightness-110"
                 >
-                  <Play className="mr-2 h-5 w-5 fill-white" /> RESUME
+                  <Play className="mr-2 h-5 w-5 fill-white" /> {t.racing.resume}
                 </Button>
                 <Button
                   onClick={handleStart}
                   variant="outline"
                   className="h-11 border-white/25 bg-black/40 font-bold tracking-wide text-white hover:bg-white/10"
                 >
-                  <RotateCcw className="mr-2 h-4 w-4" /> RESTART
+                  <RotateCcw className="mr-2 h-4 w-4" /> {t.racing.restart}
                 </Button>
                 <Button
                   onClick={onExit}
                   variant="outline"
                   className="h-11 border-white/25 bg-black/40 font-bold tracking-wide text-white hover:bg-white/10"
                 >
-                  <ChevronLeft className="mr-2 h-4 w-4" /> EXIT TO HUB
+                  <ChevronLeft className="mr-2 h-4 w-4" /> {t.racing.exit}
                 </Button>
               </div>
             </div>
@@ -674,7 +675,7 @@ export function RacingGame({ onExit }: RacingGameProps) {
             className="absolute inset-0 z-30 flex items-center justify-center bg-gradient-to-b from-black/80 via-black/65 to-black/85 p-4"
           >
             <div className="flex w-full max-w-sm flex-col items-center gap-4 text-center">
-              <h2 className="text-4xl font-black italic tracking-tight text-white">TIME UP!</h2>
+              <h2 className="text-4xl font-black italic tracking-tight text-white">{t.racing.timeUp}</h2>
               {result.isBest && (
                 <motion.div
                   initial={{ scale: 0.6, opacity: 0 }}
@@ -682,26 +683,26 @@ export function RacingGame({ onExit }: RacingGameProps) {
                   transition={{ delay: 0.15, type: 'spring', stiffness: 260, damping: 16 }}
                   className="flex items-center gap-1.5 rounded-full border border-amber-400/60 bg-amber-500/20 px-4 py-1.5 text-sm font-black tracking-wider text-amber-300"
                 >
-                  <Trophy className="h-4 w-4" /> NEW RECORD!
+                  <Trophy className="h-4 w-4" /> {t.racing.newRecord}
                 </motion.div>
               )}
 
               <div className="w-full rounded-2xl border border-white/15 bg-black/45 p-4 backdrop-blur-md">
-                <div className="text-[10px] font-bold tracking-[0.25em] text-white/55">FINAL SCORE</div>
+                <div className="text-[10px] font-bold tracking-[0.25em] text-white/55">{t.racing.finalScore}</div>
                 <div className="text-5xl font-black tabular-nums text-amber-300">
                   {result.score.toLocaleString('en-US')}
                 </div>
                 <div className="mt-3 grid grid-cols-3 gap-2 text-center">
                   <div className="rounded-xl bg-white/5 p-2">
-                    <div className="text-[9px] font-bold tracking-widest text-white/50">DISTANCE</div>
+                    <div className="text-[9px] font-bold tracking-widest text-white/50">{t.racing.statDistance}</div>
                     <div className="text-sm font-black text-white">{result.distanceKm.toFixed(2)} km</div>
                   </div>
                   <div className="rounded-xl bg-white/5 p-2">
-                    <div className="text-[9px] font-bold tracking-widest text-white/50">OVERTAKES</div>
+                    <div className="text-[9px] font-bold tracking-widest text-white/50">{t.racing.statOvertakes}</div>
                     <div className="text-sm font-black text-white">{result.overtakes}</div>
                   </div>
                   <div className="rounded-xl bg-white/5 p-2">
-                    <div className="text-[9px] font-bold tracking-widest text-white/50">TOP SPEED</div>
+                    <div className="text-[9px] font-bold tracking-widest text-white/50">{t.racing.statTopSpeed}</div>
                     <div className="text-sm font-black text-white">{Math.round(result.topSpeedKmh)}</div>
                   </div>
                 </div>
@@ -711,14 +712,17 @@ export function RacingGame({ onExit }: RacingGameProps) {
               <div className="h-5 text-[11px] font-semibold tracking-wide">
                 {sync?.status === 'synced' && (
                   <span className="text-emerald-400">
-                    ☁ Synced to global leaderboard{typeof sync.rank === 'number' ? ` — rank #${sync.rank}` : ''}
+                    {t.common.syncSynced}
+                    {typeof sync.rank === 'number'
+                      ? ' ' + fmt(t.common.syncRank, { n: sync.rank })
+                      : ''}
                   </span>
                 )}
                 {sync?.status === 'queued' && (
-                  <span className="text-amber-300">⏳ Saved — will sync when back online</span>
+                  <span className="text-amber-300">{t.common.syncQueued}</span>
                 )}
                 {sync?.status === 'offline' && (
-                  <span className="text-amber-300">📴 Offline — score will sync automatically</span>
+                  <span className="text-amber-300">{t.common.syncOffline}</span>
                 )}
               </div>
 
@@ -727,21 +731,21 @@ export function RacingGame({ onExit }: RacingGameProps) {
                   onClick={handleStart}
                   className="h-12 bg-gradient-to-b from-orange-400 to-red-500 text-base font-black tracking-widest text-white hover:brightness-110"
                 >
-                  <RotateCcw className="mr-2 h-5 w-5" /> RACE AGAIN
+                  <RotateCcw className="mr-2 h-5 w-5" /> {t.racing.raceAgain}
                 </Button>
                 <Button
                   onClick={backToMenu}
                   variant="outline"
                   className="h-11 border-white/25 bg-black/40 font-bold tracking-wide text-white hover:bg-white/10"
                 >
-                  MAIN MENU
+                  {t.racing.mainMenu}
                 </Button>
                 <Button
                   onClick={onExit}
                   variant="ghost"
                   className="h-10 text-white/70 hover:bg-white/10 hover:text-white"
                 >
-                  <ChevronLeft className="mr-1 h-4 w-4" /> Exit to hub
+                  <ChevronLeft className="mr-1 h-4 w-4" /> {t.common.exitToHub}
                 </Button>
               </div>
             </div>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useI18n } from '@/lib/i18n'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
@@ -11,6 +12,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 /** "Install app" button — hooks into Android Chrome's beforeinstallprompt event. */
 export function InstallPrompt() {
+  const { t } = useI18n()
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null)
   const [installed, setInstalled] = useState(false)
 
@@ -50,10 +52,10 @@ export function InstallPrompt() {
       onClick={handleInstall}
       size="sm"
       className="bg-amber-500 font-semibold text-stone-950 hover:bg-amber-400"
-      aria-label="Install app"
+      aria-label={t.install.aria}
     >
       <Download className="h-4 w-4" />
-      <span className="hidden sm:inline">Install</span>
+      <span className="hidden sm:inline">{t.install.label}</span>
     </Button>
   )
 }
