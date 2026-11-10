@@ -24,7 +24,7 @@ import { weekStartUtcMs } from '@/lib/tournament'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const GAMES = ['racing', 'quiz', 'g2048', 'snake'] as const
+const GAMES = ['racing', 'quiz', 'g2048', 'snake', 'parking'] as const
 type GameId = (typeof GAMES)[number]
 
 /** Highest score a legitimate single run can plausibly produce. */
@@ -33,6 +33,7 @@ const MAX_SCORE: Record<GameId, number> = {
   quiz: 20_000,
   g2048: 150_000,
   snake: 25_000,
+  parking: 10_000, // solved×100 + stars×10 across 40 levels
 }
 
 /** Minimum ms between two LIVE posts of the same device for the same game. */

@@ -44,11 +44,12 @@ interface Props {
   onOpenChange: (open: boolean) => void
 }
 
-const GAME_LABEL: Record<GameId, { emoji: string; key: 'racing' | 'quiz' | 'g2048' | 'snake' }> = {
+const GAME_LABEL: Record<GameId, { emoji: string; key: 'racing' | 'quiz' | 'g2048' | 'snake' | 'parking' }> = {
   racing: { emoji: '🏎️', key: 'racing' },
   quiz: { emoji: '🧠', key: 'quiz' },
   g2048: { emoji: '🎯', key: 'g2048' },
   snake: { emoji: '🐍', key: 'snake' },
+  parking: { emoji: '🅿️', key: 'parking' },
 }
 
 /** Weekly tournament crowns — detected from the live weekly top-10 lists. */
@@ -146,7 +147,7 @@ export function ProfileDialog({ open, onOpenChange }: Props) {
       achievementsUnlocked: 0,
       achievementsTotal: 14,
       weeklyWins: getWeeklyWins(),
-      bests: { racing: 0, quiz: 0, g2048: 0, snake: 0 },
+      bests: { racing: 0, quiz: 0, g2048: 0, snake: 0, parking: 0 },
     }
 
   return (

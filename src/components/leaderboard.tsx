@@ -258,7 +258,8 @@ export function Leaderboard({ open, onOpenChange }: Props) {
         )}
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as GameId)}>
-          <TabsList className="grid w-full grid-cols-2 bg-zinc-900">
+          {/* h-auto: 5 tabs wrap to 2 rows — fixed h-9 would clip row 2 */}
+          <TabsList className="grid h-auto w-full grid-cols-3 bg-zinc-900">
             <TabsTrigger
               value="racing"
               className="data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-300"
@@ -282,6 +283,12 @@ export function Leaderboard({ open, onOpenChange }: Props) {
               className="data-[state=active]:bg-teal-500/20 data-[state=active]:text-teal-300"
             >
               {t.board.tabSnake}
+            </TabsTrigger>
+            <TabsTrigger
+              value="parking"
+              className="data-[state=active]:bg-violet-500/20 data-[state=active]:text-violet-300"
+            >
+              {t.board.tabParking}
             </TabsTrigger>
           </TabsList>
 
@@ -312,6 +319,14 @@ export function Leaderboard({ open, onOpenChange }: Props) {
           <TabsContent value="snake">
             <TopList
               cache={byGame.snake?.[period]}
+              emptyLabel={emptyLabel}
+              period={period}
+              youDevice={youDevice}
+            />
+          </TabsContent>
+          <TabsContent value="parking">
+            <TopList
+              cache={byGame.parking?.[period]}
               emptyLabel={emptyLabel}
               period={period}
               youDevice={youDevice}

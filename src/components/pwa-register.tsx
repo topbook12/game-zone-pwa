@@ -5,6 +5,8 @@ import { RefreshCw, WifiOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { initLeaderboardSync } from '@/lib/leaderboard'
 import { initCoinSync } from '@/lib/coins'
+import { initPremiumSync } from '@/lib/premium'
+import { initCloudSync } from '@/lib/cloud'
 import { useI18n } from '@/lib/i18n'
 
 /**
@@ -38,13 +40,18 @@ export function PwaRegister() {
   const waitingRef = useRef<ServiceWorker | null>(null)
   const updateRequestedRef = useRef(false)
 
-  /* Flush queued scores + coin ledger events on load + whenever back online */
+  /* Flush queued scores + coin ledger events on load + whenever back online.
+   * Phase 5: premium re-verification + cloud backup loop join the same rhythm. */
   useEffect(() => {
     const offScores = initLeaderboardSync()
     const offCoins = initCoinSync()
+    const offPremium = initPremiumSync()
+    const offCloud = initCloudSync()
     return () => {
       offScores()
       offCoins()
+      offPremium()
+      offCloud()
     }
   }, [])
 

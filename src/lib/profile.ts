@@ -170,6 +170,7 @@ export function getProfileStats(): ProfileStats {
       quiz: bestQuizScore(),
       g2048: readStoredNumber(STORAGE_KEYS.g2048Best, 0),
       snake: readStoredNumber(STORAGE_KEYS.snakeBest, 0),
+      parking: readStoredNumber('gz-parking-best', 0),
     },
   }
 }

@@ -28,6 +28,27 @@ EN/বাংলা toggle · offline score queue · SW update card · compressed
 - ✍️ **Signed ad rewards** — `/api/coins/ad-reward` verifies HMAC-SHA256 signatures + replay nonces, ready for real ad-network S2S callbacks (set `COIN_SECRET`)
 - Full EN/বাংলা for every new string · SW v9 · `coin_events` table self-migrates on first request (no manual db step)
 
+**v2.3 highlights (Day 71–90, Phase 5 — premium & scale):**
+- 👑 **VIP premium tier** — one-time bKash/Nagad payment → personal VIP code. Perks: **2× daily coins** (800/day), **ad-free instant rewards**, **exclusive VIP cars/trails/themes** in the shop, **cloud backup**, **Car Parking** access. Codes work on up to 2 devices; `vip:list`/`vip:revoke` included; revoked devices lose the flag on their next online re-check
+- 🗝 **Manual VIP codes (zero fee)** — owner flow: `bun run vip:new [count] [devices] [note]` prints codes stored on Turso → send to the buyer → player activates in the VIP dialog. Server tables (`vip_codes`, `premium_devices`) self-migrate
+- ☁️ **Cloud sync (premium)** — coins, cosmetics, achievements, bests, streaks, profile and parking progress backed up to `cloud_saves` (auto every 5 min + on app hide + manual). A **GZC-XXXXXX restore code** restores everything on a new device with an honest merge (nothing goes backwards)
+- 🅿️ **Car Parking puzzle (new game #3)** — 40 BFS-verified levels with exact pars (2→21), tap-to-slide with destination dots + arrow keys, stars/undo/level select, coins + global leaderboard. **VIP-exclusive until 2026-11-25**, free for everyone after
+- ⚡ **Performance** — all 5 games route-split with `next/dynamic` (game code out of the initial bundle); all banners ship as **AVIF** (~40–55% lighter, JPG fallback via `<picture>`)
+- Full EN/বাংলা for every new string · v2.3
+
+### 💰 Selling VIP codes (owner manual, 30 seconds per sale)
+
+```bash
+bun run vip:new            # 1 code, 1 device
+bun run vip:new 5 2 "nov batch"   # 5 codes, 2 devices each, tagged
+bun run vip:list           # see every code + activations
+bun run vip:revoke GZVIP-XXXX-XXXX
+```
+
+1. Buyer sends the agreed ৳ to your bKash/Nagad.
+2. Run `bun run vip:new` → send them the printed `GZVIP-…` code.
+3. The player opens the app → **VIP** (crown in the header) → enters the code → done, forever.
+
 ---
 
 ## 🚀 Deploy to Vercel (5 minutes, free)

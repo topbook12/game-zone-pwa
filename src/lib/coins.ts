@@ -11,6 +11,7 @@
  */
 
 import { useSyncExternalStore } from 'react'
+import { isPremiumActive, PREMIUM_COIN_MULT } from '@/lib/premium'
 
 /* ------------------------------ constants ------------------------------ */
 
@@ -20,8 +21,10 @@ export const MAX_ADS_PER_DAY = 10
 export const STREAK_BONUS_STEP = 0.05
 export const STREAK_BONUS_MAX = 0.25
 
+export type CoinGame = 'racing' | 'quiz' | 'g2048' | 'snake' | 'parking'
+
 /** Per-play coin formulas — small on purpose (cap = controlled payout). */
-export function computePlayCoins(game: 'racing' | 'quiz' | 'g2048' | 'snake', score: number): number {
+export function computePlayCoins(game: CoinGame, score: number): number {
   const base =
     game === 'racing'
       ? Math.floor(score / 400)
@@ -29,8 +32,15 @@ export function computePlayCoins(game: 'racing' | 'quiz' | 'g2048' | 'snake', sc
         ? Math.floor(score / 20)
         : game === 'g2048'
           ? Math.floor(score / 200)
-          : Math.floor(score / 50)
-  return Math.max(0, Math.min(game === 'racing' ? 40 : 30, base))
+          : game === 'parking'
+            ? Math.floor(score / 150)
+            : Math.floor(score / 50)
+  return Math.max(0, Math.min(game === 'racing' ? 40 : game === 'parking' ? 15 : 30, base))
+}
+
+/** Daily play-coin cap — premium players get 2× (server mirrors this). */
+export function playDailyCap(): number {
+  return isPremiumActive() ? PLAY_DAILY_CAP * PREMIUM_COIN_MULT : PLAY_DAILY_CAP
 }
 
 /* ------------------------------ state ------------------------------ */
@@ -181,15 +191,17 @@ function enqueueEvent(queue: CoinEvent[], ev: CoinEvent): CoinEvent[] {
 /* ------------------------------ earn / spend ------------------------------ */
 
 /** Award play coins for a finished game (caps + streak bonus applied).
+ *  Premium players earn 2× (×2 also widens the daily cap).
  *  Returns the granted amount (0 when the daily cap is hit). */
 export function earnPlayCoins(
-  game: 'racing' | 'quiz' | 'g2048' | 'snake',
+  game: CoinGame,
   score: number
 ): number {
   const s = readCoins()
-  const base = computePlayCoins(game, score)
+  const mult = isPremiumActive() ? PREMIUM_COIN_MULT : 1
+  const base = computePlayCoins(game, score) * mult
   if (base <= 0) return 0
-  const room = Math.max(0, PLAY_DAILY_CAP - s.playToday)
+  const room = Math.max(0, playDailyCap() - s.playToday)
   if (room <= 0) return 0
   const bonus = Math.round(base * streakBonusPct(s))
   const grant = Math.min(room, base + bonus)
@@ -213,7 +225,8 @@ export function earnPlayCoins(
 export function grantAdReward(placement: 'coins' | 'nitro' | 'lifeline' | 'double', doubleAmount = 0): number {
   const s = readCoins()
   if (s.adsToday >= MAX_ADS_PER_DAY) return 0
-  const grant = placement === 'double' ? Math.max(0, Math.floor(doubleAmount)) : AD_COINS
+  const mult = isPremiumActive() ? PREMIUM_COIN_MULT : 1
+  const grant = placement === 'double' ? Math.max(0, Math.floor(doubleAmount)) : AD_COINS * mult
   const ev: CoinEvent = { type: 'ad', reason: `ad:${placement}`, amount: grant, ts: Date.now() }
   mutate((cur) =>
     trackEarnStreak({
@@ -310,4 +323,27 @@ export function initCoinSync(): () => void {
   flush()
   window.addEventListener('online', flush)
   return () => window.removeEventListener('online', flush)
+}
+
+/* ------------------------------ cloud restore (Phase 5) ------------------------------ */
+
+export interface CloudCoins {
+  balance: number
+  earnStreak: number
+  lastEarnDay: string | null
+}
+
+/**
+ * Merge a cloud backup into the local coin state (used by cloud.ts restore).
+ * Honest merge: balances/streaks take the MAX of local vs cloud, the unsynced
+ * event queue is never touched, day counters only grow.
+ */
+export function mergeCloudCoins(cloud: CloudCoins): void {
+  if (typeof window === 'undefined') return
+  mutate((cur) => ({
+    ...cur,
+    balance: Math.max(cur.balance, Math.max(0, Math.floor(cloud.balance ?? 0))),
+    earnStreak: Math.max(cur.earnStreak, Math.max(0, Math.floor(cloud.earnStreak ?? 0))),
+    lastEarnDay: cloud.lastEarnDay ?? cur.lastEarnDay,
+  }))
 }

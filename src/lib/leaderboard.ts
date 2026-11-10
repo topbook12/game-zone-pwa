@@ -16,7 +16,7 @@ const NAME_KEY = 'gz-player-name'
 const QUEUE_KEY = 'gz-score-queue'
 const TOP_CACHE_KEY = (game: string, period: Period) => `gz-top-cache-${game}-${period}`
 
-export type GameId = 'racing' | 'quiz' | 'g2048' | 'snake'
+export type GameId = 'racing' | 'quiz' | 'g2048' | 'snake' | 'parking'
 
 /** Leaderboard window — 'weekly' resets Monday 00:00 UTC. */
 export type Period = 'all' | 'weekly'

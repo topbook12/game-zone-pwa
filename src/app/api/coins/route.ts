@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getTurso } from '@/lib/turso'
+import { ensurePremiumSchema, isDevicePremium } from '@/lib/premium-server'
 
 /* ------------------------------ schema ------------------------------ */
 
@@ -26,10 +27,13 @@ const bodySchema = z.object({
   events: z.array(eventSchema).min(1).max(50),
 })
 
-/* Server-side daily earn caps (UTC day, headroom over the local-day client
- * caps 400/250 to tolerate timezone edges) */
+/* Server-side daily earn caps (UTC day). Base caps have headroom over the
+ * local-day client caps 400/250; premium devices earn 2× (client caps
+ * 800/500) so they get their own larger headroom. */
 const SERVER_PLAY_CAP = 500
 const SERVER_AD_CAP = 300
+const SERVER_PLAY_CAP_PREMIUM = 1000
+const SERVER_AD_CAP_PREMIUM = 600
 
 /* ------------------------------ migration ------------------------------ */
 
@@ -77,6 +81,13 @@ export async function GET(req: NextRequest) {
   }
   try {
     await ensureSchema()
+    let premium = false
+    try {
+      await ensurePremiumSchema()
+      premium = (await isDevicePremium(device)).premium
+    } catch {
+      /* premium lookup failed — fall back to base caps (never punish) */
+    }
     const db = getTurso()
     const { start, end } = utcDayBounds()
     const res = await db.execute({
@@ -102,7 +113,11 @@ export async function GET(req: NextRequest) {
         balance: Number(row.balance ?? 0),
         events: Number(row.events ?? 0),
         today: { play: Number(t.play ?? 0), ad: Number(t.ad ?? 0) },
-        caps: { play: SERVER_PLAY_CAP, ad: SERVER_AD_CAP },
+        caps: {
+          play: premium ? SERVER_PLAY_CAP_PREMIUM : SERVER_PLAY_CAP,
+          ad: premium ? SERVER_AD_CAP_PREMIUM : SERVER_AD_CAP,
+          premium,
+        },
       },
       { headers: { 'Cache-Control': 's-maxage=15, stale-while-revalidate=60' } }
     )
@@ -124,6 +139,15 @@ export async function POST(req: NextRequest) {
 
   try {
     await ensureSchema()
+    let premium = false
+    try {
+      await ensurePremiumSchema()
+      premium = (await isDevicePremium(deviceId)).premium
+    } catch {
+      /* premium lookup failed — fall back to base caps (never punish) */
+    }
+    const playCap = premium ? SERVER_PLAY_CAP_PREMIUM : SERVER_PLAY_CAP
+    const adCap = premium ? SERVER_AD_CAP_PREMIUM : SERVER_AD_CAP
     const db = getTurso()
     const { start, end } = utcDayBounds()
 
@@ -144,10 +168,10 @@ export async function POST(req: NextRequest) {
     const accepted: typeof events = []
     for (const ev of events) {
       if (ev.type === 'play' && ev.amount > 0) {
-        if (play + ev.amount > SERVER_PLAY_CAP) continue
+        if (play + ev.amount > playCap) continue
         play += ev.amount
       } else if (ev.type === 'ad' && ev.amount > 0) {
-        if (ad + ev.amount > SERVER_AD_CAP) continue
+        if (ad + ev.amount > adCap) continue
         ad += ev.amount
       }
       accepted.push(ev)

@@ -10,7 +10,7 @@ import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { Check, Palette, Sparkles, Paintbrush } from 'lucide-react'
+import { Check, Crown, Palette, Sparkles, Paintbrush } from 'lucide-react'
 import { useI18n, fmt } from '@/lib/i18n'
 import {
   COSMETICS,
@@ -21,6 +21,7 @@ import {
   type CosmeticItem,
 } from '@/lib/cosmetics'
 import { spendCoins, useCoins } from '@/lib/coins'
+import { usePremium } from '@/lib/premium'
 
 interface Props {
   open: boolean
@@ -78,7 +79,11 @@ export function ShopDialog({ open, onOpenChange }: Props) {
   const { t, lang } = useI18n()
   const cosmetics = useCosmetics()
   const coins = useCoins()
+  const premium = usePremium()
   const [tab, setTab] = useState<CosmeticCategory>('car')
+
+  /** VIP items are only visible to VIP players (they own them for free). */
+  const visible = (item: CosmeticItem) => !item.premium || premium.active
 
   const buy = (item: CosmeticItem) => {
     const result = buyCosmetic(item.id, spendCoins)
@@ -88,6 +93,8 @@ export function ShopDialog({ open, onOpenChange }: Props) {
       })
     } else if (result.reason === 'funds') {
       toast.error(t.shop.needCoins)
+    } else if (result.reason === 'vip') {
+      toast.error(t.shop.vipOnly)
     }
   }
 
@@ -109,9 +116,23 @@ export function ShopDialog({ open, onOpenChange }: Props) {
       >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <p className="truncate text-sm font-bold">{label}</p>
+            <p className="flex items-center gap-1.5 truncate text-sm font-bold">
+              {label}
+              {item.premium && (
+                <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-gradient-to-r from-amber-500/30 to-orange-500/30 px-1.5 py-0.5 text-[9px] font-black tracking-wider text-amber-300">
+                  <Crown className="h-2.5 w-2.5" aria-hidden="true" />
+                  {t.shop.vipBadge}
+                </span>
+              )}
+            </p>
             <p className="text-[11px] text-zinc-400">
-              {owned ? t.shop.owned : item.price === 0 ? t.shop.free : `🪙 ${item.price}`}
+              {owned
+                ? t.shop.owned
+                : item.premium
+                  ? t.shop.vipOnly
+                  : item.price === 0
+                    ? t.shop.free
+                    : `🪙 ${item.price}`}
             </p>
           </div>
           <ItemPreview item={item} />
@@ -176,13 +197,13 @@ export function ShopDialog({ open, onOpenChange }: Props) {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="car" className="mt-3 grid grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3">
-            {COSMETICS.filter((c) => c.category === 'car').map(renderItem)}
+            {COSMETICS.filter((c) => c.category === 'car' && visible(c)).map(renderItem)}
           </TabsContent>
           <TabsContent value="trail" className="mt-3 grid grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3">
-            {COSMETICS.filter((c) => c.category === 'trail').map(renderItem)}
+            {COSMETICS.filter((c) => c.category === 'trail' && visible(c)).map(renderItem)}
           </TabsContent>
           <TabsContent value="theme" className="mt-3 grid grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3">
-            {COSMETICS.filter((c) => c.category === 'theme').map(renderItem)}
+            {COSMETICS.filter((c) => c.category === 'theme' && visible(c)).map(renderItem)}
           </TabsContent>
         </Tabs>
 

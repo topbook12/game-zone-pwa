@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Gamepad2,
@@ -16,6 +17,7 @@ import {
   Flame,
   Check,
   Palette,
+  Crown,
 } from 'lucide-react'
 import { Toaster } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -27,23 +29,53 @@ import { Leaderboard } from '@/components/leaderboard'
 import { AchievementsDialog } from '@/components/achievements-dialog'
 import { ProfileDialog } from '@/components/profile-dialog'
 import { ShopDialog } from '@/components/shop-dialog'
+import { PremiumDialog } from '@/components/premium-dialog'
 import { PushReminderButton } from '@/components/push-reminder-button'
 import { GameErrorBoundary } from '@/components/error-boundary'
-import { RacingGame } from '@/components/racing-game'
-import { QuizGame } from '@/components/quiz-game'
-import { G2048Game } from '@/components/g2048-game'
-import { SnakeGame } from '@/components/snake-game'
 import { useI18n } from '@/lib/i18n'
 import { useStoredNumber } from '@/lib/game-store'
 import { useCoins } from '@/lib/coins'
 import { captureReferral, getAvatar } from '@/lib/profile'
 import { todayKey, seedFromDate, readDaily, getStreak, type DailyProgress } from '@/lib/daily'
+import { parkingFreeWindowPassed, usePremium } from '@/lib/premium'
 
-type View = 'hub' | 'racing' | 'quiz' | 'g2048' | 'snake'
+/* Route-level code splitting (Phase 5 perf): each game lives in its own chunk
+ * and is fetched only when the player opens it. */
+const RacingGame = dynamic(() => import('@/components/racing-game').then((m) => m.RacingGame), {
+  ssr: false,
+  loading: () => <GameChunkLoader />, 
+})
+const QuizGame = dynamic(() => import('@/components/quiz-game').then((m) => m.QuizGame), {
+  ssr: false,
+  loading: () => <GameChunkLoader />,
+})
+const G2048Game = dynamic(() => import('@/components/g2048-game').then((m) => m.G2048Game), {
+  ssr: false,
+  loading: () => <GameChunkLoader />,
+})
+const SnakeGame = dynamic(() => import('@/components/snake-game').then((m) => m.SnakeGame), {
+  ssr: false,
+  loading: () => <GameChunkLoader />,
+})
+const ParkingGame = dynamic(() => import('@/components/parking-game').then((m) => m.ParkingGame), {
+  ssr: false,
+  loading: () => <GameChunkLoader />,
+})
+
+/** Lightweight placeholder shown while a game chunk downloads. */
+function GameChunkLoader() {
+  return (
+    <div className="flex min-h-[50dvh] flex-col items-center justify-center gap-3" role="status">
+      <div className="h-10 w-10 animate-spin rounded-full border-2 border-amber-500/30 border-t-amber-400" />
+      <p className="text-xs font-semibold text-zinc-500">…</p>
+    </div>
+  )
+}
+
+type View = 'hub' | 'racing' | 'quiz' | 'g2048' | 'snake' | 'parking'
 
 const COMING_SOON = [
   { emoji: '🎲', name: 'Ludo' },
-  { emoji: '🧩', name: 'Car Parking' },
   { emoji: '💎', name: 'Match 3' },
 ]
 
@@ -68,10 +100,12 @@ export function GameHub() {
   const [achOpen, setAchOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [shopOpen, setShopOpen] = useState(false)
+  const [vipOpen, setVipOpen] = useState(false)
   const [avatar, setAvatar] = useState('🎮')
   const [daily, setDaily] = useState(false) // quiz opened in daily mode
   const [dailyStamp, setDailyStamp] = useState(0) // re-mount daily status card after a run
   const { t, lang } = useI18n()
+  const premium = usePremium()
 
   /* Register incoming ?ref= invite links once per device (idempotent) */
   useEffect(() => {
@@ -89,6 +123,7 @@ export function GameHub() {
   const quizBest = useStoredNumber('gz-quiz-best-gk')
   const g2048Best = useStoredNumber('gz-g2048-best')
   const snakeBest = useStoredNumber('gz-snake-best')
+  const parkingBest = useStoredNumber('gz-parking-best')
   const { progress: dailyProgress, streak } = useDailyStatus(dailyStamp)
 
   const openRacing = () => setView('racing')
@@ -103,44 +138,60 @@ export function GameHub() {
       title: t.hub.racingTitle,
       desc: t.hub.racingDesc,
       emoji: '🏎️',
-      banner: '/images/racing-banner.jpg',
+      banner: '/images/racing-banner',
       best: racingBest,
       accent: 'hover:border-amber-500/60',
       aria: t.hub.racingAria,
       onClick: openRacing,
+      vip: false,
     },
     {
       id: 'quiz',
       title: t.hub.quizTitle,
       desc: t.hub.quizDesc,
       emoji: '🧠',
-      banner: '/images/quiz-banner.jpg',
+      banner: '/images/quiz-banner',
       best: quizBest,
       accent: 'hover:border-emerald-500/60',
       aria: t.hub.quizAria,
       onClick: () => openQuiz(false),
+      vip: false,
     },
     {
       id: 'g2048',
       title: t.hub.g2048Title,
       desc: t.hub.g2048Desc,
       emoji: '🎯',
-      banner: '/images/2048-banner.jpg',
+      banner: '/images/2048-banner',
       best: g2048Best,
       accent: 'hover:border-orange-500/60',
       aria: t.hub.g2048Aria,
       onClick: () => setView('g2048'),
+      vip: false,
     },
     {
       id: 'snake',
       title: t.hub.snakeTitle,
       desc: t.hub.snakeDesc,
       emoji: '🐍',
-      banner: '/images/snake-banner.jpg',
+      banner: '/images/snake-banner',
       best: snakeBest,
       accent: 'hover:border-teal-500/60',
       aria: t.hub.snakeAria,
       onClick: () => setView('snake'),
+      vip: false,
+    },
+    {
+      id: 'parking',
+      title: t.hub.parkingTitle,
+      desc: t.hub.parkingDesc,
+      emoji: '🅿️',
+      banner: '/images/parking-banner',
+      best: parkingBest,
+      accent: 'hover:border-violet-500/60',
+      aria: t.hub.parkingAria,
+      onClick: () => setView('parking'),
+      vip: true,
     },
   ]
 
@@ -165,6 +216,20 @@ export function GameHub() {
           </div>
           <div className="flex items-center gap-2">
             <LanguageToggle />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setVipOpen(true)}
+              className={
+                premium.active
+                  ? 'border-amber-500/50 bg-gradient-to-r from-amber-500/25 to-orange-500/25 px-2.5 font-black text-amber-300 hover:from-amber-500/40 hover:to-orange-500/40'
+                  : 'border-zinc-700 bg-zinc-900 px-2.5 text-zinc-300 hover:bg-zinc-800 hover:text-amber-300'
+              }
+              aria-label={t.hub.vipAria}
+            >
+              <Crown className="h-4 w-4" aria-hidden="true" />
+              <span className="hidden sm:inline">{t.hub.vipButton}</span>
+            </Button>
             <Button
               size="sm"
               variant="outline"
@@ -344,6 +409,32 @@ export function GameHub() {
                   </div>
                 </CardContent>
               </Card>
+              {/* VIP upsell — only for free players */}
+              {!premium.active && (
+                <Card className="overflow-hidden border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-zinc-900/60 to-zinc-900/80">
+                  <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-600 shadow-lg shadow-amber-900/40">
+                        <Crown className="h-5 w-5 text-stone-950" aria-hidden="true" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-black text-amber-300">{t.premium.title}</h3>
+                        <p className="mt-0.5 max-w-md text-xs leading-relaxed text-zinc-400">
+                          {t.premium.b2} · {t.premium.b3} · {t.premium.b4}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={() => setVipOpen(true)}
+                      className="shrink-0 bg-gradient-to-r from-amber-500 to-orange-500 font-bold text-stone-950 hover:from-amber-400 hover:to-orange-400"
+                      aria-label={t.hub.vipAria}
+                    >
+                      <Crown className="mr-1 h-4 w-4" />
+                      {t.hub.vipButton}
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
               <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 <Card className="border-zinc-800 bg-zinc-900/60">
                   <CardContent className="flex flex-col items-center gap-0.5 p-3 text-center">
@@ -375,7 +466,18 @@ export function GameHub() {
                   {t.hub.gamesTitle}
                 </h3>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {games.map((game) => (
+                  {games.map((game) => {
+                    // hydration-safe: premium.active comes from the store hook
+                    const parkingLocked =
+                      game.id === 'parking' && !premium.active && !parkingFreeWindowPassed()
+                    const openGame = () => {
+                      if (parkingLocked) {
+                        setVipOpen(true)
+                        return
+                      }
+                      game.onClick()
+                    }
+                    return (
                     <motion.div
                       key={game.id}
                       whileHover={{ y: -3 }}
@@ -383,24 +485,37 @@ export function GameHub() {
                     >
                       <Card
                         className={`cursor-pointer overflow-hidden border-zinc-800 bg-zinc-900/70 transition-colors ${game.accent}`}
-                        onClick={game.onClick}
+                        onClick={openGame}
                         role="button"
                         tabIndex={0}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') game.onClick()
+                          if (e.key === 'Enter' || e.key === ' ') openGame()
                         }}
                         aria-label={game.aria}
                       >
                         <div className="relative aspect-[16/8] w-full overflow-hidden">
-                          <img
-                            src={game.banner}
-                            alt={`${game.title} banner`}
-                            className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
-                            loading="lazy"
-                          />
-                          <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2.5 py-0.5 text-[11px] font-semibold text-amber-300 backdrop-blur-sm">
-                            {game.emoji} {t.hub.readyToPlay}
-                          </span>
+                          {/* AVIF with JPG fallback — same art, ~45% smaller (Phase 5 perf) */}
+                          <picture>
+                            <source srcSet={`${game.banner}.avif`} type="image/avif" />
+                            <img
+                              src={`${game.banner}.jpg`}
+                              alt={`${game.title} banner`}
+                              className={`h-full w-full object-cover transition-transform duration-300 hover:scale-105 ${
+                                parkingLocked ? 'opacity-60 saturate-50' : ''
+                              }`}
+                              loading="lazy"
+                            />
+                          </picture>
+                          {game.id === 'parking' ? (
+                            <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500/90 to-orange-600/90 px-2.5 py-0.5 text-[11px] font-black text-stone-950 backdrop-blur-sm">
+                              <Crown className="h-3 w-3" aria-hidden="true" />
+                              {parkingLocked ? t.hub.parkingVipBadge : t.parking.vipBadge}
+                            </span>
+                          ) : (
+                            <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2.5 py-0.5 text-[11px] font-semibold text-amber-300 backdrop-blur-sm">
+                              {game.emoji} {t.hub.readyToPlay}
+                            </span>
+                          )}
                         </div>
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between gap-2">
@@ -412,19 +527,33 @@ export function GameHub() {
                           <p className="mt-1 text-xs leading-relaxed text-zinc-400">{game.desc}</p>
                           <Button
                             size="sm"
-                            className="mt-3 w-full bg-amber-500 font-bold text-stone-950 hover:bg-amber-400"
+                            className={
+                              parkingLocked
+                                ? 'mt-3 w-full border border-amber-500/40 bg-amber-500/10 font-bold text-amber-300 hover:bg-amber-500/20'
+                                : 'mt-3 w-full bg-amber-500 font-bold text-stone-950 hover:bg-amber-400'
+                            }
                             onClick={(e) => {
                               e.stopPropagation()
-                              game.onClick()
+                              openGame()
                             }}
                           >
-                            <Play className="mr-1 h-4 w-4" />
-                            {t.common.playNow}
+                            {parkingLocked ? (
+                              <>
+                                <Crown className="mr-1 h-4 w-4" />
+                                {t.hub.vipButton}
+                              </>
+                            ) : (
+                              <>
+                                <Play className="mr-1 h-4 w-4" />
+                                {t.common.playNow}
+                              </>
+                            )}
                           </Button>
                         </CardContent>
                       </Card>
                     </motion.div>
-                  ))}
+                    )
+                  })}
                 </div>
               </section>
 
@@ -517,6 +646,20 @@ export function GameHub() {
               </GameErrorBoundary>
             </motion.div>
           )}
+
+          {view === 'parking' && (
+            <motion.div
+              key="parking"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.22 }}
+            >
+              <GameErrorBoundary label={t.hub.parkingTitle}>
+                <ParkingGame onExit={() => setView('hub')} />
+              </GameErrorBoundary>
+            </motion.div>
+          )}
         </AnimatePresence>
 
         {/* Racing is a full-screen overlay — keep it OUTSIDE animated wrappers so `fixed` works */}
@@ -534,11 +677,12 @@ export function GameHub() {
         )}
       </main>
 
-      {/* Global leaderboard + achievements + profile + shop dialogs */}
+      {/* Global leaderboard + achievements + profile + shop + VIP dialogs */}
       <Leaderboard open={boardOpen} onOpenChange={setBoardOpen} />
       <AchievementsDialog open={achOpen} onOpenChange={setAchOpen} />
       <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
       <ShopDialog open={shopOpen} onOpenChange={setShopOpen} />
+      <PremiumDialog open={vipOpen} onOpenChange={setVipOpen} />
 
       {/* Achievement toasts */}
       <Toaster

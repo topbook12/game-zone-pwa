@@ -3,7 +3,7 @@
 **Principle:** every phase must stay cost-effective (client-first, free tiers, no idle servers)
 and ship *premium-feeling* features players love. One release per week is enough — quality > speed.
 
-> Current status (Day 70): Racing v2 ✅ · Quiz v2 ✅ · 2048 ✅ · Snake ✅ · Daily challenge ✅ · Achievements ✅ · PWA offline ✅ · Global leaderboard ✅ · Vercel deploy ✅ · Phase 2 content ✅ · Phase 3 social ✅ (v2.1) · **Phase 4 monetization ✅ (v2.2)**
+> Current status (Day 90): Racing v2 ✅ · Quiz v2 ✅ · 2048 ✅ · Snake ✅ · Daily challenge ✅ · Achievements ✅ · PWA offline ✅ · Global leaderboard ✅ · Vercel deploy ✅ · Phase 2 content ✅ · Phase 3 social ✅ (v2.1) · Phase 4 monetization ✅ (v2.2) · **Phase 5 premium & scale ✅ (v2.3)**
 
 ---
 
@@ -55,14 +55,16 @@ and ship *premium-feeling* features players love. One release per week is enough
 
 **Milestone:** ✅ monetization rails live with honest, player-friendly demo ads — first ৳ income starts the day a real network is plugged in.
 
-## Phase 5 — Premium & scale (Day 71–90)
-- [ ] **Premium tier (one-time or monthly):** ad-free, exclusive cars/themes, 2× daily coins
-- [ ] Payment via bKash/Nagad merchant or Stripe (whichever clears for BD) — start manual VIP-code system (zero fee)
-- [ ] Cloud sync for premium: backup progress to Turso per device
-- [ ] New game #3: **Car Parking puzzle** (premium exclusive for 2 weeks)
-- [ ] Performance: route-level code splitting, banner AVIF, budget < 200 KB JS per page
+## Phase 5 — Premium & scale (Day 71–90) 👑 ✅ DONE — shipped as v2.3
+> Goal: paying users, zero infra bills.
+- [x] **Premium tier (one-time):** ad-free instant rewards, exclusive VIP cars/trails/themes, 2× daily coins (800/day) with mirrored server caps
+- [x] Payment via bKash/Nagad — **manual VIP-code system live (zero fee):** `bun run vip:new [count] [devices] [note]` issues codes to Turso, player redeems in the VIP dialog; `vip:list` / `vip:revoke` included; codes work on up to 2 devices; revoked codes drop offline devices on their next online re-check
+- [x] Cloud sync for premium: full progress backup (coins, cosmetics, achievements, bests, streaks, profile, parking) → `cloud_saves` on Turso; auto-backup every 5 min + on hide + manual; honest merge restore (max/union) via **GZC-XXXXXX restore code** on any device
+- [x] New game #3: **Car Parking puzzle** — 40 BFS-verified levels (par 2→21, solvability-guaranteed by generator), tap-to-slide + destination dots + arrow keys, stars/undo/level select, coins + leaderboard, **VIP-exclusive until 2026-11-25** (`PARKING_FREE_FROM` in `src/lib/premium.ts`)
+- [x] Performance: all 5 games route-split via `next/dynamic` (game code out of the initial bundle), banners → **AVIF** (~40–55% smaller, `<picture>` with JPG fallback), local-dev libSQL file DB keeps every API testable without cloud creds
+- [ ] Real-money payouts — deliberately NOT built (honest design: coins buy cosmetics only, no cash-out claims)
 
-**Milestone:** paying users, zero infra bills.
+**Milestone:** ✅ premium rails live — first ৳ income starts the day a VIP code is sold.
 
 ## Phase 6 — Polish & launch v2.0 (Day 91–100)
 - [ ] TWA packaging (Bubblewrap) → publish on **Google Play** as a lightweight wrapper (~$25 one-time)

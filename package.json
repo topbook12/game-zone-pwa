@@ -1,13 +1,16 @@
 {
   "name": "game-zone-pwa",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "private": true,
   "scripts": {
     "dev": "next dev -p 3000 2>&1 | tee dev.log",
     "build": "next build",
     "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
     "lint": "eslint .",
-    "db:init": "bun scripts/init-turso.ts"
+    "db:init": "bun scripts/init-turso.ts",
+    "vip:new": "bun scripts/gen-vip-codes.ts new",
+    "vip:list": "bun scripts/gen-vip-codes.ts list",
+    "vip:revoke": "bun scripts/gen-vip-codes.ts revoke"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
