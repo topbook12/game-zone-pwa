@@ -227,6 +227,9 @@ export class RacingEngine {
   dailySeed: number | null = null
   private skyGrad: CanvasGradient | null = null
   private vignette: CanvasGradient | null = null
+  /** Draw distance + particle budget shrink on small/low-power screens. */
+  private drawDist = DRAW_DIST
+  private maxParticles = 240
 
   constructor(canvas: HTMLCanvasElement, opts: EngineOptions, sound: SoundEngine) {
     this.canvas = canvas
@@ -308,7 +311,12 @@ export class RacingEngine {
     const rect = this.canvas.getBoundingClientRect()
     const w = Math.max(1, Math.round(rect.width))
     const h = Math.max(1, Math.round(rect.height))
-    const dpr = Math.min(1.75, window.devicePixelRatio || 1)
+    /* Mobile budget: narrow viewports render fewer segments at a slightly lower
+       resolution — keeps 60fps within reach on budget phones, full detail on desktop. */
+    const small = w < 640
+    const dpr = Math.min(small ? 1.5 : 1.75, window.devicePixelRatio || 1)
+    this.drawDist = small ? 150 : DRAW_DIST
+    this.maxParticles = small ? 140 : 240
     this.canvas.width = Math.round(w * dpr)
     this.canvas.height = Math.round(h * dpr)
     this.ctx?.setTransform(dpr, 0, 0, dpr, 0, 0)
@@ -756,7 +764,7 @@ export class RacingEngine {
         arr.pop()
       }
     }
-    while (arr.length > 240) arr.shift()
+    while (arr.length > this.maxParticles) arr.shift()
   }
 
   private playerCarW(): number {
@@ -944,10 +952,10 @@ export class RacingEngine {
     let x = 0
     let dx = -(baseSeg.curve * basePercent)
     const segCount = this.segments.length
-    for (let n = 0; n < DRAW_DIST; n++) {
+    for (let n = 0; n < this.drawDist; n++) {
       const seg = this.segments[(baseSeg.index + n) % segCount]
       seg.looped = seg.index < baseSeg.index
-      seg.fog = fogFactor(n / DRAW_DIST, FOG_DENSITY)
+      seg.fog = fogFactor(n / this.drawDist, FOG_DENSITY)
       seg.clip = maxy
       const camZ = this.position - (seg.looped ? this.trackLength : 0)
       project(seg.p1, this.playerX * ROAD_W - x, playerY + CAM_H, camZ, W, H)
@@ -966,7 +974,7 @@ export class RacingEngine {
     }
 
     // sprites & traffic, far to near
-    for (let n = DRAW_DIST - 1; n > 0; n--) {
+    for (let n = this.drawDist - 1; n > 0; n--) {
       const seg = this.segments[(baseSeg.index + n) % segCount]
       if (seg.p1.camera.z <= CAM_DEPTH) continue
       for (const car of seg.cars) {
@@ -1035,7 +1043,9 @@ export class RacingEngine {
     glow.addColorStop(0, 'rgba(255,214,140,0.6)')
     glow.addColorStop(1, 'rgba(255,214,140,0)')
     ctx.fillStyle = glow
-    ctx.fillRect(0, 0, W, H)
+    /* Fill only the sky band — everything below the horizon is repainted by the
+       ground band + road segments right after, so a full-screen fill is wasted work. */
+    ctx.fillRect(0, 0, W, horizonY + 2)
     const streak = ctx.createLinearGradient(sunX - W * 0.28, sunY, sunX + W * 0.28, sunY)
     streak.addColorStop(0, 'rgba(255,224,170,0)')
     streak.addColorStop(0.5, 'rgba(255,224,170,0.28)')

@@ -96,9 +96,13 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
   const portrait = useMediaQuery('(orientation: portrait)')
   const storedBest = useStoredNumber(STORAGE_KEYS.racingBest)
   const touchMode = coarsePointer || userTouched || hasTouchApi
+  /** Latest touch mode for the engine bootstrap (synced in the effect below,
+      which is declared before the bootstrap effect and therefore runs first). */
+  const touchModeRef = useRef(touchMode)
 
   /* Auto-gas follows touch mode (writes to the engine, not React state) */
   useEffect(() => {
+    touchModeRef.current = touchMode
     const en = engineRef.current
     if (en) en.autoGas = touchMode
   }, [touchMode])
@@ -281,6 +285,10 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
     engineRef.current = engine
     engine.setDaily(dailySeed ?? null)
     engine.boot()
+    /* Touch devices drive with auto-gas. This bootstrap effect runs AFTER the
+       reactive sync above, whose first run finds engineRef still null — without
+       this line the car never accelerates on phones (time just runs out). */
+    engine.autoGas = touchModeRef.current
 
     const ro = new ResizeObserver(() => engine.resize())
     ro.observe(canvas)
@@ -439,33 +447,41 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
     },
   })
 
-  /* Invisible half-screen steering zones — press & hold anywhere */
-  const zoneBind = (side: 'left' | 'right') => ({
+  /* Invisible full-width steering zone — press & hold either half, slide across to switch.
+     Touch gives the hit element implicit pointer capture, so pointermove/pointerup keep
+     firing here even when the finger drifts; we track the active pointer and derive
+     left/right from its x position instead of relying on enter/leave (broken on touch). */
+  const steerPointer = useRef<number | null>(null)
+  const applySteerSide = useCallback((clientX: number) => {
+    const en = engineRef.current
+    if (!en) return
+    const left = clientX < window.innerWidth / 2
+    en.input.left = left
+    en.input.right = !left
+  }, [])
+  const clearSteer = useCallback((pointerId: number) => {
+    if (steerPointer.current !== pointerId) return
+    steerPointer.current = null
+    const en = engineRef.current
+    if (en) {
+      en.input.left = false
+      en.input.right = false
+    }
+  }, [])
+  const steerZone = {
     onPointerDown: (e: React.PointerEvent<HTMLDivElement>) => {
       e.preventDefault()
       setUserTouched(true)
-      const en = engineRef.current
-      if (en) en.input[side] = true
+      steerPointer.current = e.pointerId
+      applySteerSide(e.clientX)
     },
-    onPointerEnter: (e: React.PointerEvent<HTMLDivElement>) => {
-      if (e.buttons > 0) {
-        const en = engineRef.current
-        if (en) en.input[side] = true
-      }
+    onPointerMove: (e: React.PointerEvent<HTMLDivElement>) => {
+      if (steerPointer.current === e.pointerId) applySteerSide(e.clientX)
     },
-    onPointerUp: () => {
-      const en = engineRef.current
-      if (en) en.input[side] = false
-    },
-    onPointerCancel: () => {
-      const en = engineRef.current
-      if (en) en.input[side] = false
-    },
-    onPointerLeave: () => {
-      const en = engineRef.current
-      if (en) en.input[side] = false
-    },
-  })
+    onPointerUp: (e: React.PointerEvent<HTMLDivElement>) => clearSteer(e.pointerId),
+    onPointerCancel: (e: React.PointerEvent<HTMLDivElement>) => clearSteer(e.pointerId),
+    onLostPointerCapture: (e: React.PointerEvent<HTMLDivElement>) => clearSteer(e.pointerId),
+  }
 
   const iconBtn =
     'flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/40 text-white/90 backdrop-blur-md transition hover:bg-black/60 active:scale-90'
@@ -503,7 +519,7 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
               className="rounded-xl border border-white/15 bg-black/40 px-5 py-1.5 text-center backdrop-blur-md"
             >
               <div className="text-[9px] font-bold tracking-[0.2em] text-white/60">{t.racing.hudTime}</div>
-              <span ref={timeNumRef} className="text-2xl font-black tabular-nums text-white">
+              <span ref={timeNumRef} data-hud="time" className="text-2xl font-black tabular-nums text-white">
                 60
               </span>
             </div>
@@ -601,7 +617,7 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
                 </defs>
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span ref={speedNumRef} className="text-2xl font-black tabular-nums text-white sm:text-3xl">
+                <span ref={speedNumRef} data-hud="speed" className="text-2xl font-black tabular-nums text-white sm:text-3xl">
                   0
                 </span>
                 <span className="text-[8px] font-bold tracking-[0.2em] text-white/60">{t.racing.hudKmh}</span>
@@ -612,14 +628,11 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
       )}
 
       {/* ---------------- touch controls ---------------- */}
-      {touchMode && phase === 'playing' && (
+      {touchMode && (phase === 'playing' || phase === 'countdown') && (
         <>
-          {/* press-and-hold anywhere: left half / right half steer */}
-          <div className="absolute inset-x-0 bottom-0 top-[24%] z-[15] flex" aria-hidden="true">
-            <div {...zoneBind('left')} className="h-full w-1/2" />
-            <div {...zoneBind('right')} className="h-full w-1/2" />
-          </div>
-          <div className="pointer-events-none absolute bottom-[max(5.25rem,calc(env(safe-area-inset-bottom)+5.25rem))] left-4 z-20 flex gap-3">
+          {/* press & hold left/right half to steer — slide across to switch */}
+          <div className="absolute inset-x-0 bottom-0 top-[24%] z-[15]" aria-hidden="true" {...steerZone} />
+          <div className="pointer-events-none absolute bottom-[max(7rem,calc(env(safe-area-inset-bottom)+7rem))] left-4 z-20 flex gap-3">
             <button
               {...bind('left')}
               aria-label={t.racing.steerLeftAria}
@@ -635,11 +648,13 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
               <SteerRight className="h-10 w-10" />
             </button>
           </div>
-          <div className="pointer-events-none absolute bottom-[max(5.25rem,calc(env(safe-area-inset-bottom)+5.25rem))] right-4 z-20 flex items-end gap-3">
+          {/* right cluster stacked vertically so it never collides with the
+              left steer buttons on narrow phones (375px) */}
+          <div className="pointer-events-none absolute bottom-[max(7rem,calc(env(safe-area-inset-bottom)+7rem))] right-4 z-20 flex flex-col items-end gap-2">
             <button
               {...bind('brake')}
               aria-label={t.racing.brakeAria}
-              className="pointer-events-auto flex h-16 w-[88px] items-center justify-center gap-1 rounded-2xl border border-red-300/40 bg-red-600/55 text-xs font-black tracking-widest text-white shadow-lg backdrop-blur-md transition active:scale-90 active:bg-red-500/70"
+              className="pointer-events-auto flex h-14 w-[84px] items-center justify-center gap-1 rounded-2xl border border-red-300/40 bg-red-600/55 text-xs font-black tracking-widest text-white shadow-lg backdrop-blur-md transition active:scale-90 active:bg-red-500/70"
             >
               <Octagon className="h-4 w-4" />
               {t.racing.brake}
@@ -647,7 +662,7 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
             <button
               {...bind('nitro')}
               aria-label={t.racing.nitroAria}
-              className="pointer-events-auto flex h-[88px] w-[88px] flex-col items-center justify-center gap-0.5 rounded-full border border-amber-300/50 bg-amber-500/60 text-xs font-black tracking-widest text-stone-950 shadow-lg shadow-amber-900/40 backdrop-blur-md transition active:scale-90 active:bg-amber-400/80"
+              className="pointer-events-auto flex h-[84px] w-[84px] flex-col items-center justify-center gap-0.5 rounded-full border border-amber-300/50 bg-amber-500/60 text-xs font-black tracking-widest text-stone-950 shadow-lg shadow-amber-900/40 backdrop-blur-md transition active:scale-90 active:bg-amber-400/80"
             >
               <Zap className="h-6 w-6" />
               {t.racing.nitro}
