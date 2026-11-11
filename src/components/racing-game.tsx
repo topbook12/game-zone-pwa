@@ -26,6 +26,7 @@ import { SoundEngine } from '@/lib/racing/audio'
 import type { GameEvent, GamePhase, GameResult, HudData } from '@/lib/racing/types'
 import { readStoredNumber, writeStoredNumber, useStoredNumber, STORAGE_KEYS } from '@/lib/game-store'
 import { submitScore, type SubmitOutcome } from '@/lib/leaderboard'
+import { holdProps, slideProps } from '@/lib/touch'
 import { completeDaily } from '@/lib/daily'
 import { checkAchievements } from '@/lib/achievements'
 import { earnPlayCoins, computePlayCoins } from '@/lib/coins'
@@ -290,8 +291,16 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
        this line the car never accelerates on phones (time just runs out). */
     engine.autoGas = touchModeRef.current
 
-    const ro = new ResizeObserver(() => engine.resize())
-    ro.observe(canvas)
+    /* Resize handling with a legacy fallback: browsers without ResizeObserver
+       (old Android WebView) would otherwise render a 0-sized canvas forever. */
+    let ro: ResizeObserver | null = null
+    const onWinResize = () => engine.resize()
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(() => engine.resize())
+      ro.observe(canvas)
+    } else {
+      window.addEventListener('resize', onWinResize)
+    }
 
     const onVis = () => {
       if (document.hidden) engine.pause()
@@ -306,6 +315,7 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
 
     return () => {
       ro.disconnect()
+      if (!ro) window.removeEventListener('resize', onWinResize)
       document.removeEventListener('visibilitychange', onVis)
       document.removeEventListener('fullscreenchange', fsHandler)
       window.removeEventListener('touchstart', firstTouch)
@@ -420,68 +430,39 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
     }
   }, [handleStart, togglePause, toggleMute])
 
-  /* -------- touch input binding -------- */
-  const bind = (key: 'left' | 'right' | 'brake' | 'nitro') => ({
-    onPointerDown: (e: React.PointerEvent<HTMLButtonElement>) => {
-      e.preventDefault()
-      try {
-        e.currentTarget.setPointerCapture(e.pointerId)
-      } catch {
-        /* ignore */
-      }
-      setUserTouched(true)
-      const en = engineRef.current
-      if (en) en.input[key] = true
-    },
-    onPointerUp: () => {
-      const en = engineRef.current
-      if (en) en.input[key] = false
-    },
-    onPointerCancel: () => {
-      const en = engineRef.current
-      if (en) en.input[key] = false
-    },
-    onLostPointerCapture: () => {
-      const en = engineRef.current
-      if (en) en.input[key] = false
-    },
-  })
+  /* -------- touch input binding (Pointer Events + Touch Events fallback,
+     so hold buttons work on UC Browser / old WebView / every phone) -------- */
+  const bind = (key: 'left' | 'right' | 'brake' | 'nitro') =>
+    holdProps({
+      onDown: () => {
+        setUserTouched(true)
+        const en = engineRef.current
+        if (en) en.input[key] = true
+      },
+      onUp: () => {
+        const en = engineRef.current
+        if (en) en.input[key] = false
+      },
+    })
 
   /* Invisible full-width steering zone — press & hold either half, slide across to switch.
-     Touch gives the hit element implicit pointer capture, so pointermove/pointerup keep
-     firing here even when the finger drifts; we track the active pointer and derive
-     left/right from its x position instead of relying on enter/leave (broken on touch). */
-  const steerPointer = useRef<number | null>(null)
-  const applySteerSide = useCallback((clientX: number) => {
+     slideProps tracks Pointer AND Touch events with single-gesture dedup, so it works
+     on browsers without Pointer Events (UC Browser, old WebView) and modern ones alike. */
+  const steerZone = slideProps((x) => {
     const en = engineRef.current
+    if (x === null) {
+      if (en) {
+        en.input.left = false
+        en.input.right = false
+      }
+      return
+    }
+    setUserTouched(true)
     if (!en) return
-    const left = clientX < window.innerWidth / 2
+    const left = x < window.innerWidth / 2
     en.input.left = left
     en.input.right = !left
-  }, [])
-  const clearSteer = useCallback((pointerId: number) => {
-    if (steerPointer.current !== pointerId) return
-    steerPointer.current = null
-    const en = engineRef.current
-    if (en) {
-      en.input.left = false
-      en.input.right = false
-    }
-  }, [])
-  const steerZone = {
-    onPointerDown: (e: React.PointerEvent<HTMLDivElement>) => {
-      e.preventDefault()
-      setUserTouched(true)
-      steerPointer.current = e.pointerId
-      applySteerSide(e.clientX)
-    },
-    onPointerMove: (e: React.PointerEvent<HTMLDivElement>) => {
-      if (steerPointer.current === e.pointerId) applySteerSide(e.clientX)
-    },
-    onPointerUp: (e: React.PointerEvent<HTMLDivElement>) => clearSteer(e.pointerId),
-    onPointerCancel: (e: React.PointerEvent<HTMLDivElement>) => clearSteer(e.pointerId),
-    onLostPointerCapture: (e: React.PointerEvent<HTMLDivElement>) => clearSteer(e.pointerId),
-  }
+  })
 
   const iconBtn =
     'flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/40 text-white/90 backdrop-blur-md transition hover:bg-black/60 active:scale-90'

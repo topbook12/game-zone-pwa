@@ -230,6 +230,15 @@ export class RacingEngine {
   /** Draw distance + particle budget shrink on small/low-power screens. */
   private drawDist = DRAW_DIST
   private maxParticles = 240
+  /* Adaptive quality: if a device can't hold the frame rate, the loop steps
+     this down (draw distance, DPR, particles) until it can — a slow phone
+     degrades gracefully instead of turning into a slideshow. */
+  private quality = 1
+  private fpsEma = 0
+  private qualityCd = 0
+  private baseDraw = DRAW_DIST
+  private baseDprCap = 1.75
+  private baseParticles = 240
 
   constructor(canvas: HTMLCanvasElement, opts: EngineOptions, sound: SoundEngine) {
     this.canvas = canvas
@@ -314,9 +323,12 @@ export class RacingEngine {
     /* Mobile budget: narrow viewports render fewer segments at a slightly lower
        resolution — keeps 60fps within reach on budget phones, full detail on desktop. */
     const small = w < 640
-    const dpr = Math.min(small ? 1.5 : 1.75, window.devicePixelRatio || 1)
-    this.drawDist = small ? 150 : DRAW_DIST
-    this.maxParticles = small ? 140 : 240
+    this.baseDprCap = small ? 1.5 : 1.75
+    this.baseDraw = small ? 150 : DRAW_DIST
+    this.baseParticles = small ? 140 : 240
+    const dpr = Math.min(this.baseDprCap * this.quality, window.devicePixelRatio || 1)
+    this.drawDist = Math.max(70, Math.round(this.baseDraw * this.quality))
+    this.maxParticles = Math.round(this.baseParticles * this.quality)
     this.canvas.width = Math.round(w * dpr)
     this.canvas.height = Math.round(h * dpr)
     this.ctx?.setTransform(dpr, 0, 0, dpr, 0, 0)
@@ -431,6 +443,17 @@ export class RacingEngine {
     let frameDt = (t - this.lastT) / 1000
     this.lastT = t
     if (frameDt > 0.1) frameDt = 0.1
+
+    /* Adaptive quality governor — step down while avg fps < 36 (min 3s apart). */
+    const inst = 1 / Math.max(frameDt, 1e-3)
+    this.fpsEma = this.fpsEma > 0 ? this.fpsEma * 0.95 + inst * 0.05 : inst
+    this.qualityCd -= frameDt
+    if (this.qualityCd <= 0 && this.fpsEma < 36 && this.quality > 0.42) {
+      this.quality = Math.max(0.42, this.quality - 0.18)
+      this.qualityCd = 3
+      this.resize()
+    }
+
     this.acc += frameDt
     while (this.acc >= STEP) {
       this.step(STEP)

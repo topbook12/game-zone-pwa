@@ -1,5 +1,5 @@
 /* Game Zone — Service Worker (PWA offline support + Web Push) */
-const CACHE_NAME = 'game-zone-v9';
+const CACHE_NAME = 'game-zone-v10';
 const CORE_ASSETS = [
   '/',
   '/manifest.json',

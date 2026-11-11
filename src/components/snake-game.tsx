@@ -18,7 +18,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { PointerEvent as ReactPointerEvent } from 'react'
+import { holdProps, swipeProps, type SwipeDir } from '@/lib/touch'
 import { motion } from 'framer-motion'
 import {
   ChevronDown,
@@ -65,6 +65,13 @@ const DIR_UP: Cell = { x: 0, y: -1 }
 const DIR_DOWN: Cell = { x: 0, y: 1 }
 const DIR_LEFT: Cell = { x: -1, y: 0 }
 const DIR_RIGHT: Cell = { x: 1, y: 0 }
+/** Maps swipeProps directions onto grid cells (works with + without Pointer Events). */
+const SWIPE_DIRS: Record<SwipeDir, Cell> = {
+  up: DIR_UP,
+  down: DIR_DOWN,
+  left: DIR_LEFT,
+  right: DIR_RIGHT,
+}
 
 type Phase = 'menu' | 'playing' | 'paused' | 'gameover'
 
@@ -137,7 +144,6 @@ export function SnakeGame({ onExit }: SnakeGameProps) {
   const timerRef = useRef<number | null>(null)
   const sizeRef = useRef(0)
   const vignetteRef = useRef<CanvasGradient | null>(null)
-  const swipeRef = useRef<{ id: number; x: number; y: number } | null>(null)
   const audioRef = useRef<AudioContext | null>(null)
   const mutedRef = useRef(false)
 
@@ -668,31 +674,6 @@ export function SnakeGame({ onExit }: SnakeGameProps) {
     return () => window.removeEventListener('keydown', down)
   }, [startGame, steer, togglePause])
 
-  /* --------------------------- swipe handlers --------------------------- */
-
-  const onSwipeStart = (e: ReactPointerEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId)
-    } catch {
-      /* ignore */
-    }
-    swipeRef.current = { id: e.pointerId, x: e.clientX, y: e.clientY }
-  }
-
-  const onSwipeEnd = (e: ReactPointerEvent<HTMLDivElement>) => {
-    const s = swipeRef.current
-    swipeRef.current = null
-    if (!s || s.id !== e.pointerId) return
-    const dx = e.clientX - s.x
-    const dy = e.clientY - s.y
-    const ax = Math.abs(dx)
-    const ay = Math.abs(dy)
-    if (Math.max(ax, ay) < SWIPE_MIN_PX) return
-    if (ax >= ay) steer({ x: dx > 0 ? 1 : -1, y: 0 })
-    else steer({ x: 0, y: dy > 0 ? 1 : -1 })
-  }
-
   /* ------------------------------- render ------------------------------- */
 
   return (
@@ -751,9 +732,7 @@ export function SnakeGame({ onExit }: SnakeGameProps) {
         <div
           ref={wrapRef}
           className="absolute inset-0 touch-none select-none"
-          onPointerDown={onSwipeStart}
-          onPointerUp={onSwipeEnd}
-          onPointerCancel={() => (swipeRef.current = null)}
+          {...swipeProps({ onSwipe: (dir) => steer(SWIPE_DIRS[dir]), threshold: SWIPE_MIN_PX })}
           onContextMenu={(e) => e.preventDefault()}
         >
           <canvas ref={canvasRef} className="block h-full w-full" />
@@ -921,10 +900,7 @@ export function SnakeGame({ onExit }: SnakeGameProps) {
           <button
             type="button"
             aria-label={t.snake.steerUpAria}
-            onPointerDown={(e) => {
-              e.preventDefault()
-              steer(DIR_UP)
-            }}
+            {...holdProps({ onDown: () => steer(DIR_UP) })}
             className={PAD_BTN}
           >
             <ChevronUp className="h-6 w-6" />
@@ -933,10 +909,7 @@ export function SnakeGame({ onExit }: SnakeGameProps) {
           <button
             type="button"
             aria-label={t.snake.steerLeftAria}
-            onPointerDown={(e) => {
-              e.preventDefault()
-              steer(DIR_LEFT)
-            }}
+            {...holdProps({ onDown: () => steer(DIR_LEFT) })}
             className={PAD_BTN}
           >
             <ChevronLeft className="h-6 w-6" />
@@ -944,10 +917,7 @@ export function SnakeGame({ onExit }: SnakeGameProps) {
           <button
             type="button"
             aria-label={t.snake.steerDownAria}
-            onPointerDown={(e) => {
-              e.preventDefault()
-              steer(DIR_DOWN)
-            }}
+            {...holdProps({ onDown: () => steer(DIR_DOWN) })}
             className={PAD_BTN}
           >
             <ChevronDown className="h-6 w-6" />
@@ -955,10 +925,7 @@ export function SnakeGame({ onExit }: SnakeGameProps) {
           <button
             type="button"
             aria-label={t.snake.steerRightAria}
-            onPointerDown={(e) => {
-              e.preventDefault()
-              steer(DIR_RIGHT)
-            }}
+            {...holdProps({ onDown: () => steer(DIR_RIGHT) })}
             className={PAD_BTN}
           >
             <ChevronRight className="h-6 w-6" />

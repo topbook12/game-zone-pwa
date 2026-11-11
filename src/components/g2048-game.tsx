@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ChevronLeft, RotateCcw, Undo2 } from 'lucide-react'
 import { RewardedAdDialog } from '@/components/rewarded-ad-dialog'
@@ -13,6 +13,7 @@ import { computePlayCoins, earnPlayCoins } from '@/lib/coins'
 import { readStoredNumber, STORAGE_KEYS, useStoredNumber, writeStoredNumber } from '@/lib/game-store'
 import { submitScore, type SubmitOutcome } from '@/lib/leaderboard'
 import { fmt, getLang, useI18n } from '@/lib/i18n'
+import { swipeProps } from '@/lib/touch'
 
 /* ---------------------------------- types --------------------------------- */
 
@@ -270,7 +271,6 @@ export function G2048Game({ onExit }: G2048GameProps) {
   const commitTimerRef = useRef<number | null>(null)
   const flashTimerRef = useRef<number | null>(null)
   const flashSeqRef = useRef(0)
-  const pointerStartRef = useRef<{ x: number; y: number; id: number } | null>(null)
   const mountedRef = useRef(true)
   const boardRef = useRef<HTMLDivElement | null>(null)
 
@@ -483,30 +483,10 @@ export function G2048Game({ onExit }: G2048GameProps) {
     return () => board.removeEventListener('touchmove', block)
   }, [])
 
-  /* ------------------------------ swipe input ------------------------------ */
-
-  const handlePointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-    pointerStartRef.current = { x: event.clientX, y: event.clientY, id: event.pointerId }
-  }, [])
-
-  const handlePointerUp = useCallback(
-    (event: ReactPointerEvent<HTMLDivElement>) => {
-      const start = pointerStartRef.current
-      pointerStartRef.current = null
-      if (!start || event.pointerId !== start.id) return
-      const dx = event.clientX - start.x
-      const dy = event.clientY - start.y
-      const adx = Math.abs(dx)
-      const ady = Math.abs(dy)
-      if (Math.max(adx, ady) < SWIPE_THRESHOLD) return
-      handleMove(adx >= ady ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up')
-    },
-    [handleMove],
-  )
-
-  const handlePointerCancel = useCallback(() => {
-    pointerStartRef.current = null
-  }, [])
+  /* ------------------------------ swipe input ------------------------------
+     swipeProps() binds Pointer Events AND Touch Events (single-gesture dedup),
+     so swiping works on every mobile browser — including the ones (UC Browser,
+     old Android WebView) that never fire Pointer Events. */
 
   /* ------------------------------ derived UI ------------------------------ */
 
@@ -583,9 +563,7 @@ export function G2048Game({ onExit }: G2048GameProps) {
         ref={boardRef}
         className="relative aspect-square w-full max-w-[440px] touch-none select-none rounded-2xl border border-zinc-800 bg-zinc-900/80 p-2 shadow-[0_0_50px_-16px_rgba(245,158,11,0.4)]"
         style={BOARD_VARS}
-        onPointerDown={handlePointerDown}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerCancel}
+        {...swipeProps({ onSwipe: handleMove, threshold: SWIPE_THRESHOLD })}
       >
         <div className="relative h-full w-full">
           {/* Empty cell backdrops */}

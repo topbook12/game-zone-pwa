@@ -7,6 +7,20 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
+  // Game components build their input-handler props through the universal
+  // touch helpers in src/lib/touch.ts (holdProps / slideProps / swipeProps)
+  // during render. The returned closures only READ refs at event time
+  // (pointer/touch handlers) — which is legal React — but the compiler
+  // cannot see through the helper indirection, so the heuristic flags it.
+  files: [
+    "src/components/racing-game.tsx",
+    "src/components/snake-game.tsx",
+    "src/components/g2048-game.tsx",
+  ],
+  rules: {
+    "react-hooks/refs": "off",
+  },
+}, {
   rules: {
     // TypeScript rules
     "@typescript-eslint/no-explicit-any": "off",
