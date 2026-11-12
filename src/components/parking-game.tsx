@@ -622,6 +622,7 @@ export function ParkingGame({ onExit }: Props) {
                   </Button>
                   <div className="flex justify-center pt-1">
                     <ShareButton
+                      title={t.parking.title}
                       text={fmt(t.common.shareScore, { n: totalScore, game: t.parking.title })}
                     />
                   </div>

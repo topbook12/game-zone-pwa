@@ -314,8 +314,8 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
     window.addEventListener('touchstart', firstTouch, { once: true, passive: true })
 
     return () => {
-      ro.disconnect()
-      if (!ro) window.removeEventListener('resize', onWinResize)
+      if (ro) ro.disconnect()
+      else window.removeEventListener('resize', onWinResize)
       document.removeEventListener('visibilitychange', onVis)
       document.removeEventListener('fullscreenchange', fsHandler)
       window.removeEventListener('touchstart', firstTouch)
