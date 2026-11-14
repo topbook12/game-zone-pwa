@@ -1,85 +1,121 @@
-# 🗺 Game Zone — 100-Day Product Roadmap
+# 🗺 Game Zone — v3 Roadmap: 100-Day Platform Plan
 
-**Principle:** every phase must stay cost-effective (client-first, free tiers, no idle servers)
-and ship *premium-feeling* features players love. One release per week is enough — quality > speed.
+**Focus of v3:** a platform anyone can use — **zero errors, human-friendly UX, advanced
+tooling** that finds bugs before players do. Every phase ships player-visible improvements
+AND invisible quality infrastructure. One release per 10 days, quality > speed.
 
-> Current status (Day 90): Racing v2 ✅ · Quiz v2 ✅ · 2048 ✅ · Snake ✅ · Daily challenge ✅ · Achievements ✅ · PWA offline ✅ · Global leaderboard ✅ · Vercel deploy ✅ · Phase 2 content ✅ · Phase 3 social ✅ (v2.1) · Phase 4 monetization ✅ (v2.2) · **Phase 5 premium & scale ✅ (v2.3)**
+**Standing rules (apply to every phase):**
+- Cost stays near zero — free tiers only, client-first compute, no idle servers
+- Offline-first — every feature must work on a flaky 2G/3G connection
+- Bangladesh-network budget — initial page < 300 KB JS, game chunk < 150 KB, images WebP
+- Every phase ends with a **ship gate**: typecheck ✅ lint ✅ build ✅ E2E ✅ version bump ✅ SW bump ✅
 
----
-
-## Phase 1 — Foundation hardening (Day 1–10) ✅ DONE — shipped as v1.3
-- [x] **Day 1–2:** Vercel deploy ready — vercel.json, Turso env wiring, 3-step guide in README
-- [ ] **Day 1–2:** Custom domain — needs a purchased domain (manual, when ready)
-- [ ] **Day 1–2:** PWA install test on 2–3 real Android devices (manual — guide in README)
-- [x] **Day 3–4:** Offline audit — airplane-mode simulation passed: hub, both games, leaderboard cache, score queue auto-flush on reconnect
-- [x] **Day 3–4:** SW update flow — waiting-worker detection + "New version — Refresh now" card (SKIP_WAITING, player stays in control)
-- [x] **Day 4:** Offline indicator — amber "You are offline — games still work" banner
-- [x] **Day 5:** Localized string file — full EN + বাংলা dictionaries (`src/lib/i18n.ts`), EN/বাংলা toggle in header, persists in localStorage
-- [x] **Day 6–7:** Bug bash round 1 — fixed duplicate score flush on reconnect race, graceful 502 when DB env missing, `fmt` export build error
-- [x] **Day 6–7:** `GameErrorBoundary` — a crashed game shows a friendly reload card instead of a white screen (low-end device safety)
-- [x] **Day 8–10:** Privacy-friendly analytics — `@vercel/analytics`, page-view only, cookieless, Vercel free tier
-
-**Milestone:** ✅ stable, installable, offline-proof v1.3 — ready for first real players.
-
-## Phase 2 — Content & retention (Day 11–25) ✅ DONE — shipped as v2.0
-- [x] Quiz question packs v2: Movies, Bangladesh GK, Math blitz added → **9 categories, 90+ questions** (bundle client-side = $0)
-- [x] Daily challenge: date-seeded (mulberry32) — same 10 quiz questions AND same racing circuit (seeded track/hills/traffic) for every player, client-computed, offline-safe; streak counter + hub card with per-task checkmarks
-- [x] Achievements: 14 badges (first play, play counts, racing 5k/20k, quiz 1000, 512/2048 tile, snake 200/500, daily streak 3/7, global top-10) with progress bars, sonner toasts on unlock, localStorage only
-- [x] New game #1: **2048 Fusion** — swipe/keys, animated slides + merges, undo, win/keep-going, premium golden tiles
-- [x] New game #2: **Snake Neon** — canvas glow snake, swipe + d-pad + keys, particles, speed levels, synthwave neon visuals
-- [x] App assets: AI-generated 2048/Snake banners (37–53 KB), all banners → compressed JPG, icons recompressed (icon-512: 250 KB → 66 KB)
-- [x] Racing v2 mobile pass: press-and-hold left/right half of screen steers, optional **tilt steering** (analog, persisted), bigger pads (84–88 px), analog steer input in engine
-- [x] Racing v2 premium visuals: seeded procedural tracks (new every run), city skyline + stars + birds + lens streak, headlight cone, brake-light glow, traffic tail lights, reflective cat-eyes, nitro heat tint, speed-line boost
-
-**Milestone:** ✅ daily-return habit loop (daily challenge + achievements) + 4-game hub shipped.
-
-## Phase 3 — Social & competition (Day 26–45) ✅ DONE — shipped as v2.1
-- [x] Weekly tournaments: "This week" / "All time" toggle per game, window resets Monday 00:00 UTC (`created_at >= weekStart`), weekly #1 gets 👑 crown in the list + *Weekly champion* title + a persistent weekly-wins counter on the profile
-- [x] Player profile card: emoji avatar picker (16 options, header button shows your avatar), total plays, badges x/14, weekly wins, personal bests for all 4 games (all localStorage)
-- [x] Share button: Web Share API on every game-over screen + profile — "I scored X in {game}! Can you beat me? 🎮" with clipboard fallback + toast, links carry the player's `?ref=` code (free viral loop)
-- [x] Referral deep links (?ref=): captured once per device, URL cleaned after load, `referrals` table counts installs per referrer, profile shows "Friends joined" (edge-cached GET)
-- [x] Web Push (VAPID, free): opt-in button on the Daily Challenge card, SW v8 push + notificationclick handlers, `/api/push/subscribe` registry (Turso), daily Vercel cron (13:00 UTC) sends only to devices in the ~5–10 PM local window, expired subs auto-pruned
-- [x] Anti-cheat pass #1: per-game plausibility caps (racing 250k / quiz 20k / 2048 150k / snake 25k → 422) + per-device live play-speed floor 8 s (→ 429); offline-flushed scores carry their original ts and skip the floor; 422/429 are dropped client-side (never re-queued)
-
-**Milestone:** ✅ players can invite friends, share scores, compete weekly; leaderboards feel alive.
-
-## Phase 4 — Monetization v1 (Day 46–70) 💰 ✅ DONE — shipped as v2.2
-> Goal: first revenue **without** hurting free play.
-- [x] Coin economy: coins earned per play (racing /400, quiz /20, 2048 /200, snake /50 — per-run caps) + per ad, **client ledger** (`src/lib/coins.ts`, localStorage) + **server-verified event log** (`coin_events` on Turso, claim-then-send batch sync, offline-safe queue)
-- [x] Rewarded ads: network-agnostic adapter layer (`src/lib/ads.ts`) with an **honest demo player** (labeled placeholder, 5 s countdown, close-early = no reward) — swap one constant when a real network (AdSense H5/AdMob/StartApp) is connected; placements: +2 nitro (racing menu), +1 lifeline (quiz), double coins (all 4 game-over screens), flat +25 coins
-- [x] Daily limits: 400 play coins/day + 10 rewarded ads/day, mirrored server-side (UTC caps, per-device); daily streak bonus +5%/day (max +25%)
-- [x] Cosmetics shop (`/shop` dialog via header coin pill): 6 car paints, 4 exhaust trails (incl. rainbow), 4 quiz themes — pure client skins (localStorage), prices 🪙 300–900, one free default each
-- [x] Server: `coin_events` table self-migrates on first request (no manual db:init step), signed S2S ad-reward endpoint `/api/coins/ad-reward` (HMAC-SHA256 + nonce replay guard) ready for real networks
-- [ ] Real ad network account + wiring (manual: needs AdSense H5 Games / AdMob approval) — adapter is ready
-- [ ] Real-money payouts — deliberately NOT built (honest design: coins buy cosmetics only, no cash-out claims)
-
-**Milestone:** ✅ monetization rails live with honest, player-friendly demo ads — first ৳ income starts the day a real network is plugged in.
-
-## Phase 5 — Premium & scale (Day 71–90) 👑 ✅ DONE — shipped as v2.3
-> Goal: paying users, zero infra bills.
-- [x] **Premium tier (one-time):** ad-free instant rewards, exclusive VIP cars/trails/themes, 2× daily coins (800/day) with mirrored server caps
-- [x] Payment via bKash/Nagad — **manual VIP-code system live (zero fee):** `bun run vip:new [count] [devices] [note]` issues codes to Turso, player redeems in the VIP dialog; `vip:list` / `vip:revoke` included; codes work on up to 2 devices; revoked codes drop offline devices on their next online re-check
-- [x] Cloud sync for premium: full progress backup (coins, cosmetics, achievements, bests, streaks, profile, parking) → `cloud_saves` on Turso; auto-backup every 5 min + on hide + manual; honest merge restore (max/union) via **GZC-XXXXXX restore code** on any device
-- [x] New game #3: **Car Parking puzzle** — 40 BFS-verified levels (par 2→21, solvability-guaranteed by generator), tap-to-slide + destination dots + arrow keys, stars/undo/level select, coins + leaderboard, **VIP-exclusive until 2026-11-25** (`PARKING_FREE_FROM` in `src/lib/premium.ts`)
-- [x] Performance: all 5 games route-split via `next/dynamic` (game code out of the initial bundle), banners → **AVIF** (~40–55% smaller, `<picture>` with JPG fallback), local-dev libSQL file DB keeps every API testable without cloud creds
-- [ ] Real-money payouts — deliberately NOT built (honest design: coins buy cosmetics only, no cash-out claims)
-
-**Milestone:** ✅ premium rails live — first ৳ income starts the day a VIP code is sold.
-
-## Phase 6 — Polish & launch v2.0 (Day 91–100)
-- [ ] TWA packaging (Bubblewrap) → publish on **Google Play** as a lightweight wrapper (~$25 one-time)
-- [ ] Landing page polish + SEO (titles, OG images)
-- [ ] Full regression: offline, low-end Android (2 GB RAM device test), 3G throttle test
-- [ ] Admin mini-dashboard (server route + secret key): DAU, plays, ad revenue vs coins out
-- [ ] v2.0 release 🎉 + community feedback round
-
-**Milestone:** Play Store presence + sustainable operation.
+> Archived: v2 roadmap (Phases 1–5, Day 1–90) is complete and shipped — see git history
+> (`git log --oneline` tags v1.3 → v2.3). Racing, Quiz, 2048, Snake, Parking, coins, VIP,
+> referral, push, cloud backup, global leaderboard all live.
 
 ---
 
-## Cost guardrails (enforced all 100 days)
-1. No always-on servers — only serverless functions + edge cache.
-2. All game assets/logic client-side; nothing > 100 KB ships without compression review.
-3. Reads always edge-cached (`s-maxage`); writes batched/small.
-4. Free tiers tracked monthly: Vercel Hobby, Turso Free, analytics free tier.
-5. Any new feature must justify its monthly cost in taka before build.
+## Phase 1 — Ship pipeline & zero-error baseline (Day 1–10) 🔧
+> Goal: **every future bug is caught by a machine before a player sees it.**
+- [ ] **Day 1–2:** Fix Vercel deploy pipeline (owner: create Vercel token → read failed-deploy logs → root-cause fix) — *blocked on owner token*
+- [ ] **Day 2–3:** Post-deploy verification bot: script checks live sw.js version, footer version, `/api/scores` health — run after every push
+- [ ] **Day 3–5:** GitHub Actions CI (free for public repos): typecheck + lint + production build on every push; PR-style status badge in README
+- [ ] **Day 5–7:** Error sweep pass #1: strict `tsc` (no ignores), ESLint gates back on for app code, fix everything surfaced
+- [ ] **Day 8–10:** Version guard — app shows a subtle "running old version" hint if SW cache is > 2 versions behind, with one-tap refresh
+
+**Milestone:** broken deploys become impossible to miss; stale phones self-heal.
+
+## Phase 2 — User-friendly onboarding (Day 11–20) 🤝
+> Goal: a first-time player (any age, any phone) understands everything in 30 seconds.
+- [ ] First-visit welcome tour: 3 steps — pick language → install PWA → play (dismissible, remembered)
+- [ ] How-to-play screen per game: one illustrated card, EN + বাংলা, reachable from menu AND hub
+- [ ] Friendlier failure copy: GameErrorBoundary cards rewritten ("We fixed nothing yet — tap reload"), recovery one-tap
+- [ ] Settings center: sound, vibration, data-saver (low graphics), language, reset progress — one dialog, all games
+- [ ] Touch-target & contrast audit: every button ≥ 44 px, WCAG AA contrast on all screens
+
+**Milestone:** nobody needs a manual to play.
+
+## Phase 3 — Advanced tooling I: automated QA (Day 21–30) 🤖
+> Goal: all 5 games verified by robots on every commit.
+- [ ] Playwright E2E suite in CI: racing accelerates on touch, quiz answers advance, 2048/snake swipe, parking solves a level — mobile + desktop profiles
+- [ ] Lighthouse CI budgets: performance ≥ 85, accessibility ≥ 90, PWA installable, bundle-size caps — build fails if budget blown
+- [ ] CI screenshots artifact: hub + every game at 375 px, reviewed on release
+- [ ] Fix every issue the robots find (they will find some)
+
+**Milestone:** regressions die in CI, never on a player's phone.
+
+## Phase 4 — Performance & data economy (Day 31–40) ⚡
+> Goal: fastest game hub in Bangladesh on a ৳150/day data pack.
+- [ ] Lazy-load every game chunk (hub stays tiny; game code loads on tap)
+- [ ] Asset diet: banners → WebP/AVIF, icons recompressed, audit all fonts
+- [ ] FPS overlay (dev builds only) + quality-governor tuning from real numbers
+- [ ] Storage manager UI: "how much space do I use", clear-cache without losing scores (queue-safe)
+- [ ] Offline completeness check: full catalog + leaderboard cache + profile — airplane-mode certified
+
+**Milestone:** < 300 KB to first play; everything works offline.
+
+## Phase 5 — Accessibility & localization deep pass (Day 41–50) 🌐
+> Goal: playable by everyone — screen readers, low-end phones, Bangla-first users.
+- [ ] Screen-reader pass: aria-live score updates, labeled controls in all 5 games
+- [ ] `prefers-reduced-motion` support: animations calm down automatically
+- [ ] 100% string coverage audit: EN + বাংলা including error messages, push text, ads
+- [ ] Bangla numerals toggle (৳ score display mode)
+- [ ] Keyboard-only play for desktop (tab order, visible focus)
+
+**Milestone:** nobody is excluded by language, ability, or device.
+
+## Phase 6 — Advanced tooling II: observability (Day 51–60) 📡
+> Goal: the owner sees problems before players report them — $0 tooling.
+- [ ] Tiny error reporter: `window.onerror` + `unhandledrejection` → POST `/api/log` → Turso table (rate-limited, no third-party service)
+- [ ] Web Vitals collection via the same endpoint (LCP/INP/CLS per device class)
+- [ ] Owner admin page (secret path): recent errors, live version, DB row counts, sync-queue health
+- [ ] Daily uptime cron: health ping; if unhealthy → Web Push alert to the owner's own device
+- [ ] Weekly digest: plays/coins/errors summary as a push to owner (Sunday)
+
+**Milestone:** "it's broken" reports become "we knew before you did".
+
+## Phase 7 — Content & fairness (Day 61–70) 🎯
+> Goal: more to do, and everyone trusts the leaderboard.
+- [ ] Parking: +20 levels (graduated difficulty), star ratings per level
+- [ ] Quiz: +60 questions (Bangladesh GK emphasis), difficulty tags, per-category leaderboards
+- [ ] Anti-cheat #2: server-side outlier detection (score distribution per device), shadow-flag + review list in admin page
+- [ ] Monthly season badges (replaces plain weekly crowns) + hall-of-fame screen
+
+**Milestone:** deeper content, tournament integrity.
+
+## Phase 8 — New game #1: Bangla Word Puzzle (Day 71–80) 🔤
+> Goal: viral, zero-asset, fully offline daily habit (Wordle-style, Bangla words).
+- [ ] 5-letter Bangla word list (500+ curated words), daily seeded word + free practice mode
+- [ ] Emoji-grid share result (Wordle-style spoiler-free share → WhatsApp/Facebook growth)
+- [ ] Achievements, streaks, leaderboard category integration
+- [ ] On-screen Bangla keyboard (mobile-first), hint system (uses coins — connects economy)
+
+**Milestone:** a shareable daily habit that costs zero server money.
+
+## Phase 9 — New game #2 + hub evolution (Day 81–90) 🧠
+> Goal: memory game + a hub that feels like a console, not a list.
+- [ ] Memory Match: icon-pair flipping, difficulty tiers, zero assets (SVG icons), offline
+- [ ] Hub redesign: favorites, "continue playing" row, search/filter, recently-played
+- [ ] App shortcuts: long-press icon → direct to daily challenge / specific game
+- [ ] Richer install prompt: PWA screenshots for the install sheet (Android Chrome)
+
+**Milestone:** 7 games, console-grade hub, home-screen-first experience.
+
+## Phase 10 — Release engineering & v3.0 launch (Day 91–100) 🚀
+> Goal: launch v3.0.0 like a product, not a push.
+- [ ] QA marathon matrix: 2 low-end Androids + 1 mid phone + tablet + desktop, each online/offline
+- [ ] API load sanity test (self-scripted, gentle — respect free tier)
+- [ ] Docs: PLAYER_GUIDE.md (players, EN/বাংলা) + OWNER_GUIDE.md (VIP codes, DB ops, deploy runbook, incident playbook)
+- [ ] Final sweep: robots green (CI + Lighthouse + E2E), version 3.0.0, SW v-final, celebration update card
+- [ ] Launch: tag v3.0.0, release notes (EN+বাংলা), push notification to all opted-in devices
+
+**Milestone:** v3.0.0 — a fast, friendly, self-monitoring platform that fixes itself.
+
+---
+
+## Owner manual actions (outside my reach)
+1. **Vercel token** → unblock the deploy pipeline fix (Phase 1, Day 1–2) — *the current blocker*
+2. **GitHub token reset** (security hygiene — old token exposed in chat)
+3. Optional: custom domain (৳/year) for a branded URL
+4. Optional: real ad-network account approval (adapter is ready — one constant swap)
