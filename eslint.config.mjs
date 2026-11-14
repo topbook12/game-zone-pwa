@@ -58,6 +58,14 @@ const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
     "no-useless-escape": "off",
   },
 }, {
+  // Phase 1 (v3) error gate: app code keeps the valuable rules ON.
+  // (Dev folders are ignored below; the three game components keep their
+  // targeted `react-hooks/refs` exemption in the block above.)
+  files: ["src/**/*.{ts,tsx}"],
+  rules: {
+    "@typescript-eslint/no-unused-vars": "error",
+  },
+}, {
   ignores: ["node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts", "examples/**", "scripts/**", "mini-services/**", "skills"]
 }];
 

@@ -4,13 +4,15 @@ import type { NextConfig } from "next";
  * Config notes:
  *  - `output: "standalone"` only for self-hosted/Docker runs (sandbox).
  *    On Vercel we let the platform use its own optimized output.
+ *  - TypeScript errors FAIL the build (Phase 1 v3: zero-error baseline —
+ *    typecheck runs in CI and must never be bypassed).
  *  - Headers: the Service Worker must always revalidate (so PWA updates
  *    ship instantly), while icons/manifest can be cached hard.
  */
 const nextConfig: NextConfig = {
   output: process.env.VERCEL ? undefined : "standalone",
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   reactStrictMode: false,
   poweredByHeader: false,

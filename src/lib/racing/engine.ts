@@ -52,7 +52,6 @@ const COLORS = {
   cp: { road: '#616161', grass: '#cfa76b', rumble: '#e76f51', lane: '#c9c2ad' },
 } as const
 type ColorKey = keyof typeof COLORS
-const FOG_COLOR = '#ffe3b8'
 const FOG_RGB: [number, number, number] = [255, 227, 184]
 
 /* ------------------------- internal types ------------------------- */

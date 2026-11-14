@@ -93,7 +93,7 @@ interface Props {
 }
 
 export function ParkingGame({ onExit }: Props) {
-  const { t, lang } = useI18n()
+  const { t } = useI18n()
 
   /* gate — re-evaluated on mount; premium flag change re-renders via hook */
   const gateAllowed = useMemo(() => canPlayParking(), [])

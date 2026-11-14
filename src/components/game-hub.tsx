@@ -104,7 +104,7 @@ export function GameHub() {
   const [avatar, setAvatar] = useState('🎮')
   const [daily, setDaily] = useState(false) // quiz opened in daily mode
   const [dailyStamp, setDailyStamp] = useState(0) // re-mount daily status card after a run
-  const { t, lang } = useI18n()
+  const { t } = useI18n()
   const premium = usePremium()
 
   /* Register incoming ?ref= invite links once per device (idempotent) */

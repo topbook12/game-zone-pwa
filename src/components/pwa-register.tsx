@@ -7,6 +7,7 @@ import { initLeaderboardSync } from '@/lib/leaderboard'
 import { initCoinSync } from '@/lib/coins'
 import { initPremiumSync } from '@/lib/premium'
 import { initCloudSync } from '@/lib/cloud'
+import { APP_VERSION } from '@/lib/app-version'
 import { useI18n } from '@/lib/i18n'
 
 /**
@@ -33,6 +34,17 @@ function useOnline(): boolean {
   return online
 }
 
+/** True when semantic version `a` is strictly newer than `b` ("2.5.0" > "2.4.0"). */
+function isNewerVersion(a: string, b: string): boolean {
+  const pa = a.split('.').map((n) => parseInt(n, 10) || 0)
+  const pb = b.split('.').map((n) => parseInt(n, 10) || 0)
+  for (let i = 0; i < 3; i++) {
+    const d = (pa[i] ?? 0) - (pb[i] ?? 0)
+    if (d !== 0) return d > 0
+  }
+  return false
+}
+
 export function PwaRegister() {
   const { t } = useI18n()
   const online = useOnline()
@@ -52,6 +64,41 @@ export function PwaRegister() {
       offCoins()
       offPremium()
       offCloud()
+    }
+  }, [])
+
+  /* -------- Phase 1 version guard: stale pages self-heal --------
+   * Asks the live server which build it serves and compares it with this
+   * page's build. If the server is NEWER, this page is stale (old SW cache or
+   * an old PWA instance) and the one-tap refresh card appears. Runs 10 s after
+   * load, then every 30 min and on reconnect. Offline → silently skipped. */
+  useEffect(() => {
+    let cancelled = false
+    const check = async () => {
+      if (cancelled || typeof navigator === 'undefined' || !navigator.onLine) return
+      try {
+        const res = await fetch('/api/version', { cache: 'no-store' })
+        if (res.status === 404) {
+          // Older server than this page's build — nothing to do (deploy lag).
+          return
+        }
+        if (!res.ok) return
+        const data = (await res.json()) as { version?: string }
+        if (!cancelled && data.version && isNewerVersion(data.version, APP_VERSION)) {
+          setUpdateReady(true)
+        }
+      } catch {
+        /* offline / network error — try again later */
+      }
+    }
+    const initial = window.setTimeout(() => void check(), 10_000)
+    const interval = window.setInterval(() => void check(), 30 * 60 * 1000)
+    window.addEventListener('online', check)
+    return () => {
+      cancelled = true
+      window.clearTimeout(initial)
+      window.clearInterval(interval)
+      window.removeEventListener('online', check)
     }
   }, [])
 
@@ -102,7 +149,15 @@ export function PwaRegister() {
 
   const applyUpdate = useCallback(() => {
     updateRequestedRef.current = true
-    waitingRef.current?.postMessage({ type: 'SKIP_WAITING' })
+    if (waitingRef.current) {
+      // A newer worker is downloaded but waiting — activate it, the
+      // controllerchange listener above reloads the page.
+      waitingRef.current.postMessage({ type: 'SKIP_WAITING' })
+    } else {
+      // Server is newer than this page (version guard) — a plain reload
+      // fetches fresh HTML (navigation is network-first).
+      window.location.reload()
+    }
   }, [])
 
   return (

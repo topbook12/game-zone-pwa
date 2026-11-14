@@ -22,7 +22,6 @@ import {
   initLeaderboardSync,
   type GameId,
   type Period,
-  type ScoreRow,
   type TopCache,
 } from '@/lib/leaderboard'
 import { useI18n } from '@/lib/i18n'

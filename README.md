@@ -1,5 +1,7 @@
 # 🎮 Game Zone — Offline-Ready PWA Game Hub
 
+[![CI](https://github.com/topbook12/game-zone-pwa/actions/workflows/ci.yml/badge.svg)](https://github.com/topbook12/game-zone-pwa/actions/workflows/ci.yml)
+
 A **cost-effective, offline-first game platform** (PWA) built with Next.js 16 + TypeScript.
 Install it on Android from the browser — it runs **fully offline** after the first load,
 scores are saved on-device, and a tiny global leaderboard syncs through a serverless API.

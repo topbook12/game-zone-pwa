@@ -18,11 +18,11 @@ AND invisible quality infrastructure. One release per 10 days, quality > speed.
 
 ## Phase 1 — Ship pipeline & zero-error baseline (Day 1–10) 🔧
 > Goal: **every future bug is caught by a machine before a player sees it.**
-- [ ] **Day 1–2:** Fix Vercel deploy pipeline (owner: create Vercel token → read failed-deploy logs → root-cause fix) — *blocked on owner token*
-- [ ] **Day 2–3:** Post-deploy verification bot: script checks live sw.js version, footer version, `/api/scores` health — run after every push
-- [ ] **Day 3–5:** GitHub Actions CI (free for public repos): typecheck + lint + production build on every push; PR-style status badge in README
-- [ ] **Day 5–7:** Error sweep pass #1: strict `tsc` (no ignores), ESLint gates back on for app code, fix everything surfaced
-- [ ] **Day 8–10:** Version guard — app shows a subtle "running old version" hint if SW cache is > 2 versions behind, with one-tap refresh
+- [ ] **Day 1–2:** Fix Vercel deploy pipeline (owner: create Vercel token → read failed-deploy logs → root-cause fix) — *blocked on owner token; bot + CI below already detect the outage*
+- [x] **Day 2–3:** Post-deploy verification bot: `bun run verify:deploy` checks live sw.js version, `/api/version`, `/api/scores` health and the page footer against the local build; also runs as the CI `live-check` job (daily 03:00 UTC cron)
+- [x] **Day 3–5:** GitHub Actions CI (free for public repos): frozen-lockfile install → strict typecheck → lint → **production build gate** on every push; daily live-site verification; badge in README
+- [x] **Day 5–7:** Error sweep pass #1: `ignoreBuildErrors: false` (TS now FAILS the build), ESLint `no-unused-vars` gate re-enabled for `src/**`, 5 dead-code errors fixed (unused lang/ScoreRow/FOG_COLOR/actionTypes), leftover `src/lib/db.ts` + `prisma/` + `db/` + `tests/` dead files removed (v2.2 cleanup was incomplete)
+- [x] **Day 8–10:** Version guard — `/api/version` (force-dynamic, no-store) serves the build version; `pwa-register` compares it to the bundled `APP_VERSION` every 30 min + on reconnect; if the server is newer the existing one-tap refresh card appears and reloads (stale phones self-heal)
 
 **Milestone:** broken deploys become impossible to miss; stale phones self-heal.
 
