@@ -97,7 +97,7 @@ function TopList({
                 </span>
               )}
             </span>
-            <span className="shrink-0 text-xs text-zinc-500">{formatWhen(row.at)}</span>
+            <span className="shrink-0 text-xs text-zinc-400">{formatWhen(row.at)}</span>
             <span className="shrink-0 text-sm font-bold text-amber-300">
               {row.score.toLocaleString('en-US')}
             </span>
@@ -253,7 +253,7 @@ export function Leaderboard({ open, onOpenChange }: Props) {
           </button>
         </div>
         {period === 'weekly' && (
-          <p className="text-center text-[10px] text-zinc-500">{t.board.weeklyResets}</p>
+          <p className="text-center text-[10px] text-zinc-400">{t.board.weeklyResets}</p>
         )}
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as GameId)}>
@@ -333,11 +333,11 @@ export function Leaderboard({ open, onOpenChange }: Props) {
           </TabsContent>
         </Tabs>
 
-        <div className="flex items-center justify-between gap-2 text-xs text-zinc-500">
+        <div className="flex items-center justify-between gap-2 text-xs text-zinc-400">
           <span className="flex items-center gap-1.5">
             {stale ? (
               <>
-                <CloudOff className="h-3.5 w-3.5 text-zinc-500" /> {t.board.stale}
+                <CloudOff className="h-3.5 w-3.5 text-zinc-400" /> {t.board.stale}
               </>
             ) : (
               <>

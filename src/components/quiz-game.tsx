@@ -19,6 +19,7 @@ import { ShareButton } from '@/components/share-button'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { fmt, useI18n, getLang } from '@/lib/i18n'
+import { HowToPlayButton } from '@/components/how-to-play'
 import { readStoredNumber, useStoredNumber, writeStoredNumber, STORAGE_KEYS } from '@/lib/game-store'
 import { submitScore, type SubmitOutcome } from '@/lib/leaderboard'
 import { completeDaily, todaySeed } from '@/lib/daily'
@@ -279,9 +280,12 @@ export function QuizGame({ onExit, daily }: QuizGameProps) {
             <ChevronLeft className="h-4 w-4" />
             {t.common.backToHub}
           </Button>
-          <div className="flex items-center gap-1.5 text-sm text-zinc-400">
-            <Brain className="h-4 w-4 text-amber-400" />
-            {t.quiz.bankLabel} <span className="font-semibold text-amber-300">{QUIZ_QUESTIONS.length}+</span>
+          <div className="flex items-center gap-2">
+            <HowToPlayButton game="quiz" variant="icon" />
+            <div className="flex items-center gap-1.5 text-sm text-zinc-400">
+              <Brain className="h-4 w-4 text-amber-400" />
+              {t.quiz.bankLabel} <span className="font-semibold text-amber-300">{QUIZ_QUESTIONS.length}+</span>
+            </div>
           </div>
         </div>
 
@@ -391,7 +395,7 @@ export function QuizGame({ onExit, daily }: QuizGameProps) {
           </div>
         </div>
 
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-zinc-400">
           {t.quiz.bestCat}{' '}
           <span className="font-semibold text-amber-300">{Math.max(best, result.score)}</span>
         </p>
@@ -439,7 +443,7 @@ export function QuizGame({ onExit, daily }: QuizGameProps) {
                 )}
               </>
             ) : (
-              <span className="text-xs text-zinc-500">{t.coins.dailyCap}</span>
+              <span className="text-xs text-zinc-400">{t.coins.dailyCap}</span>
             )}
           </div>
         ) : null}
@@ -583,7 +587,7 @@ export function QuizGame({ onExit, daily }: QuizGameProps) {
           if (showCorrect) cls = 'border-emerald-500 bg-emerald-600 text-white'
           else if (showWrong) cls = 'border-red-500 bg-red-600/90 text-white'
           else if (isRemoved) cls = 'border-zinc-800/60 bg-zinc-900/40 text-zinc-600 line-through'
-          else if (answered !== null) cls = 'border-zinc-800 bg-zinc-900/60 text-zinc-500'
+          else if (answered !== null) cls = 'border-zinc-800 bg-zinc-900/60 text-zinc-400'
 
           return (
             <button

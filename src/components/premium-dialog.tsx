@@ -184,7 +184,7 @@ export function PremiumDialog({ open, onOpenChange }: Props) {
                     <Copy className="h-3.5 w-3.5" />
                   </Button>
                 </div>
-                <p className="mt-1.5 text-[10px] leading-snug text-zinc-500">{t.premium.cloudCodeDesc}</p>
+                <p className="mt-1.5 text-[10px] leading-snug text-zinc-400">{t.premium.cloudCodeDesc}</p>
               </div>
 
               <div className="mt-3 flex items-center justify-between gap-2">

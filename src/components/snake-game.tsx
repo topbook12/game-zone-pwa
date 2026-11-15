@@ -40,6 +40,8 @@ import { computePlayCoins, earnPlayCoins } from '@/lib/coins'
 import { readStoredNumber, STORAGE_KEYS, useStoredNumber, writeStoredNumber } from '@/lib/game-store'
 import { submitScore, type SubmitOutcome } from '@/lib/leaderboard'
 import { fmt, getLang, useI18n } from '@/lib/i18n'
+import { updateSettings, useSettings } from '@/lib/settings'
+import { HowToPlayButton } from '@/components/how-to-play'
 
 /* ------------------------------ constants ------------------------------ */
 
@@ -162,6 +164,13 @@ export function SnakeGame({ onExit }: SnakeGameProps) {
     () => typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0)
   )
   const storedBest = useStoredNumber(STORAGE_KEYS.snakeBest)
+
+  /* Settings Center (Phase 2): the global sound switch drives the local mute */
+  const settings = useSettings()
+  useEffect(() => {
+    mutedRef.current = !settings.sound
+    setMuted(!settings.sound)
+  }, [settings.sound])
 
   const phaseRef = useRef<Phase>('menu')
   const handlePhase = useCallback((p: Phase) => {
@@ -300,6 +309,8 @@ export function SnakeGame({ onExit }: SnakeGameProps) {
   const toggleMute = useCallback(() => {
     mutedRef.current = !mutedRef.current
     setMuted(mutedRef.current)
+    // Keep the Settings Center in sync — one mute switch everywhere (Phase 2)
+    updateSettings({ sound: !mutedRef.current })
   }, [])
 
   const steer = useCallback((d: Cell) => {
@@ -707,6 +718,7 @@ export function SnakeGame({ onExit }: SnakeGameProps) {
             <div className="text-[8px] font-bold tracking-[0.18em] text-emerald-500/80">{t.snake.speed}</div>
             <div className="text-sm font-black leading-none tabular-nums text-emerald-300">×{speedLabel}</div>
           </div>
+          <HowToPlayButton game="snake" variant="icon" />
           <button
             type="button"
             onClick={togglePause}
@@ -866,7 +878,7 @@ export function SnakeGame({ onExit }: SnakeGameProps) {
               </div>
             )}
             {coinGrant !== null && coinGrant.granted === 0 && coinGrant.base > 0 && (
-              <div className="text-xs text-zinc-500">{t.coins.dailyCap}</div>
+              <div className="text-xs text-zinc-400">{t.coins.dailyCap}</div>
             )}
             <div className="mt-1 flex w-full max-w-[220px] flex-col gap-2">
               <Button

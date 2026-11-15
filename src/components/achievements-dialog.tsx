@@ -83,12 +83,12 @@ export function AchievementsDialog({ open, onOpenChange }: Props) {
                       {a.title}
                     </span>
                     {a.goal > 0 && a.unlockedAt === null && (
-                      <span className="shrink-0 text-[10px] font-semibold text-zinc-500">
+                      <span className="shrink-0 text-[10px] font-semibold text-zinc-400">
                         {Math.min(a.current, a.goal)}/{a.goal}
                       </span>
                     )}
                   </div>
-                  <p className="truncate text-[11px] text-zinc-500">{a.desc}</p>
+                  <p className="truncate text-[11px] text-zinc-400">{a.desc}</p>
                   {a.goal > 0 && a.unlockedAt === null && (
                     <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-zinc-800">
                       <div

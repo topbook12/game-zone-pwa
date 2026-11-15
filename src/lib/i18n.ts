@@ -71,7 +71,7 @@ const en = {
     installStep3: 'Or open the menu (⋮) → "Add to Home screen"',
     installStep4: 'Launch it like a real app from your home screen — works offline too!',
     installNote: 'After the first load, all games run completely offline',
-    footerCopyright: 'Game Zone © 2025 • Version 2.4',
+    footerCopyright: 'Game Zone © 2025 • Version 2.5',
     footerOffline: 'Offline-ready PWA',
   },
   premium: {
@@ -412,6 +412,100 @@ const en = {
     earn: 'Finish watching to earn {n} coins',
     capped: 'Daily ad limit reached ({n}/day) — come back tomorrow!',
   },
+  welcome: {
+    skip: 'Skip',
+    stepOf: 'Step {n} of {m}',
+    pickTitle: 'Welcome to Game Zone!',
+    pickDesc: 'Choose your language — you can change it anytime.',
+    langEn: 'English',
+    langBn: 'বাংলা',
+    installTitle: 'Install for the best experience',
+    installDesc: 'Add Game Zone to your home screen to play full-screen and offline.',
+    installNow: 'Install now',
+    installLater: "I'll do it later",
+    installHint: 'No button? Chrome menu (⋮) → "Add to Home screen".',
+    installed: 'Installed ✓',
+    playTitle: 'You are ready!',
+    playDesc:
+      'Pick any game, score big and climb the leaderboard. Everything saves on your phone — no account needed.',
+    start: "Let's play",
+  },
+  howto: {
+    open: 'How to play',
+    openAria: 'How to play {game}',
+    close: 'Close',
+    steps: 'Steps',
+    tip: 'Tip',
+    racing: {
+      title: 'Turbo Rush',
+      s1: 'Your car accelerates automatically — you only steer.',
+      s2: 'Steer by tilting your phone, dragging on screen, or arrow keys on desktop.',
+      s3: 'Dodge traffic — checkpoints add time, overtakes add score.',
+      s4: 'Tap NITRO for a burst of speed; it fills up as you drive clean.',
+      tip: 'Look at the road far ahead, not the car. A crash costs 5 seconds.',
+    },
+    quiz: {
+      title: 'Brain Quiz',
+      s1: 'Pick a category — GK, Sports, Science and more.',
+      s2: 'Each question gives you 4 options and a timer.',
+      s3: 'Fast correct answers score more; answer streaks multiply points.',
+      s4: 'Stuck? Use a lifeline to remove two wrong options.',
+      tip: 'Daily quiz mode earns bonus coins once per day.',
+    },
+    g2048: {
+      title: '2048 Fusion',
+      s1: 'Swipe (or use arrow keys) to slide every tile at once.',
+      s2: 'Two tiles with the same number merge into one bigger tile.',
+      s3: 'Keep your biggest tile in a corner and build around it.',
+      s4: 'Reach the 2048 tile — or keep going for an even higher score.',
+      tip: 'Never fill the board without a merge left — that ends the run.',
+    },
+    snake: {
+      title: 'Snake Neon',
+      s1: 'Swipe on the board or use arrow keys to turn the snake.',
+      s2: 'Eat glowing orbs to grow longer and score points.',
+      s3: 'Speed rises as you grow — plan your turns early.',
+      s4: 'Avoid the walls and your own tail.',
+      tip: 'Looping in circles keeps you safe when the board gets crowded.',
+    },
+    parking: {
+      title: 'Car Parking',
+      s1: 'Slide cars horizontally or vertically — one square per move.',
+      s2: 'Clear a path for the red VIP car to the exit arrow.',
+      s3: 'Fewer moves = more stars and more coins.',
+      s4: '40 levels, gradually harder. Reset any level anytime.',
+      tip: 'Move the long blocking trucks first — they free the most space.',
+    },
+  },
+  settings: {
+    open: 'Open settings',
+    title: 'Settings',
+    desc: 'One place — applies to every game on this phone.',
+    sound: 'Sound',
+    soundDesc: 'Game effects and sound cues',
+    haptics: 'Vibration',
+    hapticsDesc: 'Buzz on crashes and big moments (supported phones)',
+    dataSaver: 'Data & graphics saver',
+    dataSaverDesc: 'Lower 3D detail — smoother on weak phones, saves battery',
+    language: 'Language',
+    reset: 'Reset progress',
+    resetDesc:
+      'Erases scores, coins, badges, cosmetics and your profile from this phone. Cannot be undone.',
+    resetConfirmTitle: 'Erase everything?',
+    resetConfirmDesc:
+      'All best scores, coins, badges and your profile will be wiped from this phone. VIP and device settings stay.',
+    resetCancel: 'Keep my progress',
+    resetConfirm: 'Yes, erase all',
+    resetDone: 'Progress erased — fresh start! 🧹',
+  },
+  error: {
+    title: 'Oops — the game hit a snag',
+    desc: '{game} closed unexpectedly. Your saved scores are safe.',
+    descGeneric: 'An unexpected error occurred. Your saved scores are safe.',
+    reload: 'Reload game',
+    backHub: 'Back to hub',
+    hint: 'Reloading usually fixes it in one tap. If it keeps happening, the next update will fix it.',
+  },
 }
 
 export type Dict = typeof en
@@ -478,7 +572,7 @@ const bn: Dict = {
     installStep3: 'অথবা মেনু (⋮) → "Add to Home screen"',
     installStep4: 'হোম স্ক্রিন থেকে আসল অ্যাপের মতো চালু করুন — অফলাইনেও চলবে!',
     installNote: 'প্রথমবার লোডের পর সব গেম সম্পূর্ণ অফলাইনে চলে',
-    footerCopyright: 'গেম জোন © ২০২৫ • ভার্সন ২.৪',
+    footerCopyright: 'গেম জোন © ২০২৫ • ভার্সন ২.৫',
     footerOffline: 'অফলাইন-রেডি PWA',
   },
   premium: {
@@ -819,6 +913,97 @@ const bn: Dict = {
     earn: 'পুরো দেখে {n} কয়েন জিতুন',
     capped: 'আজকের বিজ্ঞাপন লিমিট শেষ ({n}/দিন) — কাল আবার আসুন!',
   },
+  welcome: {
+    skip: 'এড়িয়ে যান',
+    stepOf: 'ধাপ {n}/{m}',
+    pickTitle: 'গেম জোনে স্বাগতম!',
+    pickDesc: 'আপনার ভাষা বাছুন — যেকোনো সময় বদলাতে পারবেন।',
+    langEn: 'English',
+    langBn: 'বাংলা',
+    installTitle: 'সেরা অভিজ্ঞতার জন্য ইনস্টল করুন',
+    installDesc: 'গেম জোন হোম স্ক্রিনে যোগ করুন — ফুল-স্ক্রিনে ও অফলাইনে খেলতে পারবেন।',
+    installNow: 'এখনই ইনস্টল করুন',
+    installLater: 'পরে করব',
+    installHint: 'বাটন দেখছেন না? Chrome মেনু (⋮) → "Add to Home screen"।',
+    installed: 'ইনস্টল হয়েছে ✓',
+    playTitle: 'আপনি প্রস্তুত!',
+    playDesc: 'যেকোনো গেম বাছুন, বড় স্কোর করুন, লিডারবোর্ডে উঠুন। সব ফোনেই সেভ হয় — অ্যাকাউন্ট লাগবে না।',
+    start: 'চলুন খেলি',
+  },
+  howto: {
+    open: 'কীভাবে খেলবেন',
+    openAria: '{game} কীভাবে খেলবেন',
+    close: 'বন্ধ করুন',
+    steps: 'ধাপ',
+    tip: 'টিপস',
+    racing: {
+      title: 'টার্বো রাশ',
+      s1: 'গাড়ি নিজে থেকেই এগোয় — আপনি শুধু স্টিয়ারিং করবেন।',
+      s2: 'ফোন কাত করে, স্ক্রিনে আঙুল টেনে বা ডেস্কটপে অ্যারো কী দিয়ে ঘোরান।',
+      s3: 'অন্য গাড়ি এড়িয়ে যান — চেকপয়েন্টে সময় বাড়ে, ওভারটেকে স্কোর বাড়ে।',
+      s4: 'নিট্রোতে ট্যাপ করলে গতি বাড়ে; পরিষ্কার চালালে এটা ভরে ওঠে।',
+      tip: 'গাড়ির সামনে নয়, অনেক সামনের রাস্তা দেখুন। বিধ্বস্ত হলে ৫ সেকেন্ড হারাবেন।',
+    },
+    quiz: {
+      title: 'ব্রেইন কুইজ',
+      s1: 'ক্যাটাগরি বাছুন — জিকে, খেলাধুলা, বিজ্ঞান আরও।',
+      s2: 'প্রতিটি প্রশ্নে ৪টি অপশন ও একটি টাইমার থাকে।',
+      s3: 'তাড়াতাড়ি সঠিক উত্তরে স্কোর বেশি; টানা সঠিক উত্তরে পয়েন্ট গুণ হয়।',
+      s4: 'আটকে গেলে লাইফলাইন ব্যবহার করুন — দুটো ভুল অপশন মুছে যাবে।',
+      tip: 'দৈনিক কুইজ মোডে দিনে একবার বোনাস কয়েন পাওয়া যায়।',
+    },
+    g2048: {
+      title: '২০৪৮ ফিউশন',
+      s1: 'সোয়াইপ (বা অ্যারো কী) দিলে সব টাইল একসাথে সরে।',
+      s2: 'একই সংখ্যার দুটি টাইল মিলে একটি বড় টাইল হয়।',
+      s3: 'সবচেয়ে বড় টাইলটি এক কোণে রাখুন, তার চারপাশে সাজান।',
+      s4: '২০৪৮ টাইল ছুঁয়ে দেখান — চাইলে আরও বেশি স্কোরের জন্য খেলতে থাকুন।',
+      tip: 'মার্জ ছাড়া ভরা বোর্ডে সোয়াইপ করবেন না — খেলা শেষ হয়ে যেতে পারে।',
+    },
+    snake: {
+      title: 'স্নেক নিয়ন',
+      s1: 'বোর্ডে সোয়াইপ করুন বা অ্যারো কী দিয়ে সাপ ঘোরান।',
+      s2: 'জ্বলজ্বলে বল খেয়ে বড় হন ও পয়েন্ট তুলুন।',
+      s3: 'বড় হলে গতি বাড়ে — আগে থেকে মোড় প্ল্যান করুন।',
+      s4: 'দেয়াল ও নিজের লেজ এড়িয়ে চলুন।',
+      tip: 'বোর্ড ভরে গেলে গোলাকার ঘুরে থাকলে নিরাপদ থাকা যায়।',
+    },
+    parking: {
+      title: 'কার পার্কিং',
+      s1: 'গাড়ি সোজা বা আড়াআড়ি সরান — এক ঘর করে।',
+      s2: 'লাল VIP গাড়ির জন্য পথ খুলে এক্সিট তীরে পৌঁছে দিন।',
+      s3: 'কম চালে বেশি তারা ও বেশি কয়েন।',
+      s4: '৪০টি লেভেল, ধাপে ধাপে কঠিন। যেকোনো সময় রিসেট করা যায়।',
+      tip: 'আগে লম্বা ট্রাকগুলো সরান — সবচেয়ে বেশি জায়গা খোলে।',
+    },
+  },
+  settings: {
+    open: 'সেটিংস খুলুন',
+    title: 'সেটিংস',
+    desc: 'এক জায়গায় — এই ফোনের সব গেমে প্রযোজ্য।',
+    sound: 'শব্দ',
+    soundDesc: 'গেমের ইফেক্ট ও সাউন্ড কিউ',
+    haptics: 'ভাইব্রেশন',
+    hapticsDesc: 'বিধ্বস্ত বা বড় মুহূর্তে কাঁপুনি (সাপোর্টেড ফোনে)',
+    dataSaver: 'ডেটা ও গ্রাফিক্স সেভার',
+    dataSaverDesc: 'কম 3D ডিটেইল — দুর্বল ফোনে মসৃণ, ব্যাটারিও বাঁচে',
+    language: 'ভাষা',
+    reset: 'প্রগ্রেস রিসেট',
+    resetDesc: 'এই ফোন থেকে স্কোর, কয়েন, ব্যাজ, কসমেটিকস ও প্রোফাইল মুছে যাবে। ফেরানো যাবে না।',
+    resetConfirmTitle: 'সব মুছে ফেলবেন?',
+    resetConfirmDesc: 'সেরা স্কোর, কয়েন, ব্যাজ ও প্রোফাইল এই ফোন থেকে মুছে যাবে। VIP ও ডিভাইস সেটিংস থাকবে।',
+    resetCancel: 'প্রগ্রেস রাখুন',
+    resetConfirm: 'হ্যাঁ, সব মুছুন',
+    resetDone: 'প্রগ্রেস মুছে গেছে — নতুন শুরু! 🧹',
+  },
+  error: {
+    title: 'উফ — গেমে একটা সমস্যা হলো',
+    desc: '{game} হঠাৎ বন্ধ হয়ে গেছে। আপনার সেভ করা স্কোর নিরাপদ আছে।',
+    descGeneric: 'অপ্রত্যাশিত একটি সমস্যা হয়েছে। আপনার সেভ করা স্কোর নিরাপদ আছে।',
+    reload: 'গেম রিলোড করুন',
+    backHub: 'হাবে ফিরুন',
+    hint: 'রিলোড করলেই সাধারণত এক ট্যাপে ঠিক হয়ে যায়। বারবার হলে পরের আপডেটে ঠিক হবে।',
+  },
 }
 
 const STRINGS: Record<Lang, Dict> = { en, bn }
@@ -847,6 +1032,11 @@ function subscribeLang(cb: () => void): () => void {
 
 export function getLang(): Lang {
   return readLang()
+}
+
+/** Synchronous dictionary read for non-hook contexts (class components). */
+export function getDict(): Dict {
+  return STRINGS[readLang()]
 }
 
 export function setLang(lang: Lang): void {

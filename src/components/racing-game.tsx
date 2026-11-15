@@ -32,6 +32,8 @@ import { checkAchievements } from '@/lib/achievements'
 import { earnPlayCoins, computePlayCoins } from '@/lib/coins'
 import { getCarColor, getTrail, useCosmetics } from '@/lib/cosmetics'
 import { fmt, useI18n, getLang } from '@/lib/i18n'
+import { readSettings, updateSettings, useSettings } from '@/lib/settings'
+import { HowToPlayButton } from '@/components/how-to-play'
 
 const RING_R = 42
 const RING_C = 2 * Math.PI * RING_R
@@ -108,6 +110,15 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
     if (en) en.autoGas = touchMode
   }, [touchMode])
 
+  /* Settings Center (Phase 2): sound / haptics / data-saver apply live */
+  const settings = useSettings()
+  useEffect(() => {
+    const nextMuted = !settings.sound
+    setMuted(nextMuted)
+    soundRef.current?.setMuted(nextMuted)
+    engineRef.current?.setDataSaver(settings.dataSaver)
+  }, [settings.sound, settings.dataSaver])
+
   /* -------- HUD refs (updated per-frame without re-render) -------- */
   const speedNumRef = useRef<HTMLSpanElement | null>(null)
   const ringRef = useRef<SVGCircleElement | null>(null)
@@ -179,7 +190,7 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
         .then(setSync)
         .catch(() => setSync({ status: 'queued' }))
     } else if (ev.type === 'crash') {
-      if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(60)
+      if (readSettings().haptics && typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(60)
     }
   }, [dailySeed])
 
@@ -210,6 +221,8 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
     setMuted((m) => {
       const next = !m
       soundRef.current?.setMuted(next)
+      // Keep the Settings Center in sync — one mute switch everywhere (Phase 2)
+      updateSettings({ sound: !next })
       return next
     })
   }, [])
@@ -282,9 +295,11 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
 
     const sound = new SoundEngine()
     soundRef.current = sound
+    sound.setMuted(!readSettings().sound)
     const engine = new RacingEngine(canvas, { onFrame, onPhase: handlePhase, onEvent: handleEvent }, sound)
     engineRef.current = engine
     engine.setDaily(dailySeed ?? null)
+    engine.setDataSaver(readSettings().dataSaver)
     engine.boot()
     /* Touch devices drive with auto-gas. This bootstrap effect runs AFTER the
        reactive sync above, whose first run finds engineRef still null — without
@@ -485,11 +500,11 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
           <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
             {/* score */}
             <div className="rounded-xl border border-white/15 bg-black/40 px-3 py-1.5 backdrop-blur-md">
-              <div className="text-[9px] font-bold tracking-[0.2em] text-white/60">{t.racing.hudScore}</div>
+              <div className="text-[9px] font-bold tracking-[0.2em] text-white/75">{t.racing.hudScore}</div>
               <span ref={scoreRef} className="text-xl font-black tabular-nums text-amber-300">
                 0
               </span>
-              <div className="mt-0.5 text-[10px] font-semibold text-white/70">
+              <div className="mt-0.5 text-[10px] font-semibold text-white/80">
                 {t.racing.hudOvertakes} <span ref={ovtRef} className="text-white">0</span>
               </div>
             </div>
@@ -499,7 +514,7 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
               ref={timeCardRef}
               className="rounded-xl border border-white/15 bg-black/40 px-5 py-1.5 text-center backdrop-blur-md"
             >
-              <div className="text-[9px] font-bold tracking-[0.2em] text-white/60">{t.racing.hudTime}</div>
+              <div className="text-[9px] font-bold tracking-[0.2em] text-white/75">{t.racing.hudTime}</div>
               <span ref={timeNumRef} data-hud="time" className="text-2xl font-black tabular-nums text-white">
                 60
               </span>
@@ -507,6 +522,7 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
 
             {/* buttons */}
             <div className="pointer-events-auto flex gap-2">
+              <HowToPlayButton game="racing" variant="icon" />
               <button onClick={togglePause} className={iconBtn} aria-label={t.racing.pauseAria}>
                 <Pause className="h-5 w-5" />
               </button>
@@ -549,7 +565,7 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
           {/* bottom-left stats */}
           <div className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-3 sm:left-5">
             <div className="rounded-xl border border-white/15 bg-black/40 px-3 py-1.5 backdrop-blur-md">
-              <div className="text-[9px] font-bold tracking-[0.2em] text-white/60">{t.racing.hudDistance}</div>
+              <div className="text-[9px] font-bold tracking-[0.2em] text-white/75">{t.racing.hudDistance}</div>
               <span ref={distRef} className="text-sm font-bold tabular-nums text-white/90">
                 0.00 km
               </span>
@@ -601,7 +617,7 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
                 <span ref={speedNumRef} data-hud="speed" className="text-2xl font-black tabular-nums text-white sm:text-3xl">
                   0
                 </span>
-                <span className="text-[8px] font-bold tracking-[0.2em] text-white/60">{t.racing.hudKmh}</span>
+                <span className="text-[8px] font-bold tracking-[0.2em] text-white/75">{t.racing.hudKmh}</span>
               </div>
             </div>
           </div>
@@ -689,7 +705,7 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
                     TURBO RUSH
                   </span>
                 </h1>
-                <p className="mt-1.5 text-xs font-bold tracking-[0.35em] text-white/60">
+                <p className="mt-1.5 text-xs font-bold tracking-[0.35em] text-white/75">
                   {dailySeed != null && dailyDate ? `DAILY CIRCUIT · ${dailyDate}` : t.racing.circuit}
                 </p>
               </div>
@@ -731,7 +747,7 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
                   className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-bold transition ${
                     tiltOn
                       ? 'border-amber-400/60 bg-amber-500/20 text-amber-300'
-                      : 'border-white/20 bg-black/40 text-white/70 hover:bg-white/10'
+                      : 'border-white/20 bg-black/40 text-white/80 hover:bg-white/10'
                   }`}
                 >
                   <Smartphone className={`h-4 w-4 ${tiltOn ? 'animate-pulse' : ''}`} />
@@ -900,7 +916,7 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
                 </div>
               )}
               {coinGrant && coinGrant.granted === 0 && coinGrant.base > 0 && (
-                <div className="text-[11px] font-semibold text-zinc-500">{t.coins.dailyCap}</div>
+                <div className="text-[11px] font-semibold text-zinc-400">{t.coins.dailyCap}</div>
               )}
 
               <div className="flex w-full flex-col gap-2">
@@ -926,7 +942,7 @@ export function RacingGame({ onExit, dailySeed, dailyDate }: RacingGameProps) {
                 <Button
                   onClick={onExit}
                   variant="ghost"
-                  className="h-10 text-white/70 hover:bg-white/10 hover:text-white"
+                  className="h-10 text-white/80 hover:bg-white/10 hover:text-white"
                 >
                   <ChevronLeft className="mr-1 h-4 w-4" /> {t.common.exitToHub}
                 </Button>

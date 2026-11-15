@@ -25,6 +25,9 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { InstallPrompt } from '@/components/install-prompt'
 import { LanguageToggle } from '@/components/language-toggle'
+import { SettingsButton } from '@/components/settings-dialog'
+import { WelcomeTour } from '@/components/welcome-tour'
+import { HowToPlayButton } from '@/components/how-to-play'
 import { Leaderboard } from '@/components/leaderboard'
 import { AchievementsDialog } from '@/components/achievements-dialog'
 import { ProfileDialog } from '@/components/profile-dialog'
@@ -38,6 +41,7 @@ import { useCoins } from '@/lib/coins'
 import { captureReferral, getAvatar } from '@/lib/profile'
 import { todayKey, seedFromDate, readDaily, getStreak, type DailyProgress } from '@/lib/daily'
 import { parkingFreeWindowPassed, usePremium } from '@/lib/premium'
+import type { GameId } from '@/components/how-to-play'
 
 /* Route-level code splitting (Phase 5 perf): each game lives in its own chunk
  * and is fetched only when the player opens it. */
@@ -67,7 +71,7 @@ function GameChunkLoader() {
   return (
     <div className="flex min-h-[50dvh] flex-col items-center justify-center gap-3" role="status">
       <div className="h-10 w-10 animate-spin rounded-full border-2 border-amber-500/30 border-t-amber-400" />
-      <p className="text-xs font-semibold text-zinc-500">…</p>
+      <p className="text-xs font-semibold text-zinc-400">…</p>
     </div>
   )
 }
@@ -202,20 +206,23 @@ export function GameHub() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-stone-950 text-zinc-100">
-      {/* Header */}
+      {/* First-visit welcome tour (Phase 2) — self-dismissing, remembered */}
+      <WelcomeTour />
+      {/* Header — wraps to two rows on narrow phones so the title is never crushed */}
       <header className="sticky top-0 z-40 border-b border-zinc-800/80 bg-stone-950/90 backdrop-blur-md">
-        <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3 px-4 py-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-600 shadow-lg shadow-amber-900/40">
+        <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-600 shadow-lg shadow-amber-900/40">
               <Gamepad2 className="h-6 w-6 text-stone-950" aria-hidden="true" />
             </div>
-            <div>
-              <h1 className="text-lg font-extrabold leading-tight tracking-tight">{t.hub.appName}</h1>
-              <p className="text-[11px] leading-tight text-zinc-400">{t.hub.tagline}</p>
+            <div className="min-w-0">
+              <h1 className="truncate text-lg font-extrabold leading-tight tracking-tight">{t.hub.appName}</h1>
+              <p className="truncate text-[11px] leading-tight text-zinc-400">{t.hub.tagline}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-1.5">
             <LanguageToggle />
+            <SettingsButton />
             <Button
               size="sm"
               variant="outline"
@@ -359,7 +366,7 @@ export function GameHub() {
                     {streak > 0 && (
                       <div className="shrink-0 text-right">
                         <div className="text-lg font-black text-orange-300">🔥 {streak}</div>
-                        <div className="text-[9px] font-semibold text-zinc-500">{t.daily.streakLabel}</div>
+                        <div className="text-[9px] font-semibold text-zinc-400">{t.daily.streakLabel}</div>
                       </div>
                     )}
                   </div>
@@ -525,30 +532,33 @@ export function GameHub() {
                             </span>
                           </div>
                           <p className="mt-1 text-xs leading-relaxed text-zinc-400">{game.desc}</p>
-                          <Button
-                            size="sm"
-                            className={
-                              parkingLocked
-                                ? 'mt-3 w-full border border-amber-500/40 bg-amber-500/10 font-bold text-amber-300 hover:bg-amber-500/20'
-                                : 'mt-3 w-full bg-amber-500 font-bold text-stone-950 hover:bg-amber-400'
-                            }
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              openGame()
-                            }}
-                          >
-                            {parkingLocked ? (
-                              <>
-                                <Crown className="mr-1 h-4 w-4" />
-                                {t.hub.vipButton}
-                              </>
-                            ) : (
-                              <>
-                                <Play className="mr-1 h-4 w-4" />
-                                {t.common.playNow}
-                              </>
-                            )}
-                          </Button>
+                          <div className="mt-3 flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              className={
+                                parkingLocked
+                                  ? 'min-w-0 flex-1 border border-amber-500/40 bg-amber-500/10 font-bold text-amber-300 hover:bg-amber-500/20'
+                                  : 'min-w-0 flex-1 bg-amber-500 font-bold text-stone-950 hover:bg-amber-400'
+                              }
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                openGame()
+                              }}
+                            >
+                              {parkingLocked ? (
+                                <>
+                                  <Crown className="mr-1 h-4 w-4 shrink-0" />
+                                  {t.hub.vipButton}
+                                </>
+                              ) : (
+                                <>
+                                  <Play className="mr-1 h-4 w-4 shrink-0" />
+                                  {t.common.playNow}
+                                </>
+                              )}
+                            </Button>
+                            <HowToPlayButton game={game.id as GameId} variant="icon" />
+                          </div>
                         </CardContent>
                       </Card>
                     </motion.div>
@@ -560,7 +570,7 @@ export function GameHub() {
               {/* Coming soon */}
               <section aria-label={t.hub.comingSoon}>
                 <h3 className="mb-3 flex items-center gap-2 text-base font-bold text-zinc-300">
-                  <Lock className="h-4 w-4 text-zinc-500" />
+                  <Lock className="h-4 w-4 text-zinc-400" />
                   {t.hub.comingSoon}
                 </h3>
                 <div className="grid grid-cols-3 gap-2 sm:gap-3">
@@ -571,7 +581,7 @@ export function GameHub() {
                     >
                       <span className="text-2xl grayscale">{g.emoji}</span>
                       <span className="text-xs font-semibold text-zinc-400">{g.name}</span>
-                      <span className="text-[10px] text-zinc-500">{t.hub.soon}</span>
+                      <span className="text-[10px] text-zinc-400">{t.hub.soon}</span>
                     </div>
                   ))}
                 </div>
@@ -590,7 +600,7 @@ export function GameHub() {
                     <li>{t.hub.installStep3}</li>
                     <li>{t.hub.installStep4}</li>
                   </ol>
-                  <div className="flex items-center gap-2 text-xs text-zinc-500">
+                  <div className="flex items-center gap-2 text-xs text-zinc-400">
                     <WifiOff className="h-3.5 w-3.5 text-teal-400" />
                     {t.hub.installNote}
                   </div>
@@ -607,7 +617,13 @@ export function GameHub() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.22 }}
             >
-              <GameErrorBoundary label={t.hub.quizTitle}>
+              <GameErrorBoundary
+                label={t.hub.quizTitle}
+                onBack={() => {
+                  setView('hub')
+                  setDailyStamp((s) => s + 1)
+                }}
+              >
                 <QuizGame
                   onExit={() => {
                     setView('hub')
@@ -627,7 +643,7 @@ export function GameHub() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.22 }}
             >
-              <GameErrorBoundary label={t.hub.g2048Title}>
+              <GameErrorBoundary label={t.hub.g2048Title} onBack={() => setView('hub')}>
                 <G2048Game onExit={() => setView('hub')} />
               </GameErrorBoundary>
             </motion.div>
@@ -641,7 +657,7 @@ export function GameHub() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.22 }}
             >
-              <GameErrorBoundary label={t.hub.snakeTitle}>
+              <GameErrorBoundary label={t.hub.snakeTitle} onBack={() => setView('hub')}>
                 <SnakeGame onExit={() => setView('hub')} />
               </GameErrorBoundary>
             </motion.div>
@@ -655,7 +671,7 @@ export function GameHub() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.22 }}
             >
-              <GameErrorBoundary label={t.hub.parkingTitle}>
+              <GameErrorBoundary label={t.hub.parkingTitle} onBack={() => setView('hub')}>
                 <ParkingGame onExit={() => setView('hub')} />
               </GameErrorBoundary>
             </motion.div>
@@ -664,7 +680,13 @@ export function GameHub() {
 
         {/* Racing is a full-screen overlay — keep it OUTSIDE animated wrappers so `fixed` works */}
         {view === 'racing' && (
-          <GameErrorBoundary label={t.hub.racingTitle}>
+          <GameErrorBoundary
+            label={t.hub.racingTitle}
+            onBack={() => {
+              setView('hub')
+              setDailyStamp((s) => s + 1)
+            }}
+          >
             <RacingGame
               onExit={() => {
                 setView('hub')
@@ -699,8 +721,8 @@ export function GameHub() {
       {/* Sticky footer */}
       <footer className="mt-auto border-t border-zinc-800/80 bg-stone-950/95">
         <div className="mx-auto flex w-full max-w-3xl flex-col items-center justify-between gap-1 px-4 py-3 text-center sm:flex-row sm:text-left">
-          <p className="text-xs text-zinc-500">{t.hub.footerCopyright}</p>
-          <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+          <p className="text-xs text-zinc-400">{t.hub.footerCopyright}</p>
+          <div className="flex items-center gap-1.5 text-xs text-zinc-400">
             <WifiOff className="h-3.5 w-3.5 text-teal-500" />
             {t.hub.footerOffline}
           </div>

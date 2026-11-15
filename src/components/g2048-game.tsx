@@ -14,6 +14,7 @@ import { readStoredNumber, STORAGE_KEYS, useStoredNumber, writeStoredNumber } fr
 import { submitScore, type SubmitOutcome } from '@/lib/leaderboard'
 import { fmt, getLang, useI18n } from '@/lib/i18n'
 import { swipeProps } from '@/lib/touch'
+import { HowToPlayButton } from '@/components/how-to-play'
 
 /* ---------------------------------- types --------------------------------- */
 
@@ -521,6 +522,7 @@ export function G2048Game({ onExit }: G2048GameProps) {
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
+            <HowToPlayButton game="g2048" variant="icon" />
             <h2 className="bg-gradient-to-b from-amber-200 to-amber-500 bg-clip-text text-2xl font-black tracking-tight text-transparent">
               {t.g2048.title}
             </h2>
@@ -709,7 +711,7 @@ export function G2048Game({ onExit }: G2048GameProps) {
                     </div>
                   )}
                   {coinGrant !== null && coinGrant.granted === 0 && coinGrant.base > 0 && (
-                    <div className="mt-3 text-xs text-zinc-500">{t.coins.dailyCap}</div>
+                    <div className="mt-3 text-xs text-zinc-400">{t.coins.dailyCap}</div>
                   )}
                   <Button
                     onClick={handleNewGame}

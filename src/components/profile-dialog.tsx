@@ -200,14 +200,14 @@ export function ProfileDialog({ open, onOpenChange }: Props) {
                 aria-label={t.board.editNameAria}
               >
                 <span className="truncate text-base font-bold">{name}</span>
-                <Pencil className="h-3.5 w-3.5 shrink-0 text-zinc-500 group-hover:text-amber-300" />
+                <Pencil className="h-3.5 w-3.5 shrink-0 text-zinc-400 group-hover:text-amber-300" />
               </button>
             )}
           </div>
 
           {/* Avatar picker */}
           <div>
-            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
               {t.profile.avatarAria}
             </p>
             <div className="grid grid-cols-8 gap-1.5" role="radiogroup" aria-label={t.profile.avatarAria}>
@@ -255,12 +255,12 @@ export function ProfileDialog({ open, onOpenChange }: Props) {
 
           {/* This week's crowns */}
           <div>
-            <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+            <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
               <Crown className="h-3.5 w-3.5 text-orange-400" aria-hidden="true" />
               {t.profile.weeklyTitle}
             </p>
             {crownsLoading ? (
-              <div className="flex items-center gap-2 text-xs text-zinc-500">
+              <div className="flex items-center gap-2 text-xs text-zinc-400">
                 <RefreshCw className="h-3.5 w-3.5 animate-spin" />
                 …
               </div>
@@ -276,13 +276,13 @@ export function ProfileDialog({ open, onOpenChange }: Props) {
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-zinc-500">{t.profile.weeklyNone}</p>
+              <p className="text-xs text-zinc-400">{t.profile.weeklyNone}</p>
             )}
           </div>
 
           {/* Personal bests */}
           <div>
-            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
               {t.profile.bestTitle}
             </p>
             <div className="flex flex-col gap-1">
@@ -331,7 +331,7 @@ export function ProfileDialog({ open, onOpenChange }: Props) {
                 {t.profile.copy}
               </Button>
             </div>
-            <p className="mt-1.5 text-[10px] text-zinc-500">
+            <p className="mt-1.5 text-[10px] text-zinc-400">
               {t.profile.codeLabel}: {getRefCode()}
             </p>
           </div>

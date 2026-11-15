@@ -28,11 +28,11 @@ AND invisible quality infrastructure. One release per 10 days, quality > speed.
 
 ## Phase 2 — User-friendly onboarding (Day 11–20) 🤝
 > Goal: a first-time player (any age, any phone) understands everything in 30 seconds.
-- [ ] First-visit welcome tour: 3 steps — pick language → install PWA → play (dismissible, remembered)
-- [ ] How-to-play screen per game: one illustrated card, EN + বাংলা, reachable from menu AND hub
-- [ ] Friendlier failure copy: GameErrorBoundary cards rewritten ("We fixed nothing yet — tap reload"), recovery one-tap
-- [ ] Settings center: sound, vibration, data-saver (low graphics), language, reset progress — one dialog, all games
-- [ ] Touch-target & contrast audit: every button ≥ 44 px, WCAG AA contrast on all screens
+- [x] First-visit welcome tour: 3 steps — pick language → install PWA → play (dismissible, remembered)
+- [x] How-to-play screen per game: one illustrated card, EN + বাংলা, reachable from menu AND hub
+- [x] Friendlier failure copy: GameErrorBoundary cards rewritten ("We fixed nothing yet — tap reload"), recovery one-tap
+- [x] Settings center: sound, vibration, data-saver (low graphics), language, reset progress — one dialog, all games
+- [x] Touch-target & contrast audit: every button ≥ 44 px, WCAG AA contrast on all screens
 
 **Milestone:** nobody needs a manual to play.
 

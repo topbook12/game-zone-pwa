@@ -19,7 +19,7 @@ export function LanguageToggle() {
       role="group"
       aria-label={t.common.langAria}
     >
-      <Languages className="ml-2 h-3.5 w-3.5 shrink-0 text-zinc-500" aria-hidden="true" />
+      <Languages className="ml-2 h-3.5 w-3.5 shrink-0 text-zinc-400" aria-hidden="true" />
       {OPTIONS.map((opt) => (
         <Button
           key={opt.id}

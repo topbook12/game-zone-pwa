@@ -158,7 +158,7 @@ export function RewardedAdDialog({ open, onOpenChange, placement, doubleAmount =
               variant="ghost"
               size="sm"
               onClick={() => finish(false)}
-              className="text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
+              className="text-zinc-400 hover:bg-zinc-800 hover:text-zinc-300"
             >
               {t.ads.closeEarly}
             </Button>

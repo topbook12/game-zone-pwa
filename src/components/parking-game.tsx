@@ -25,6 +25,7 @@ import { readStoredNumber, writeStoredNumber, notifyStoreChange } from '@/lib/ga
 import { checkAchievements } from '@/lib/achievements'
 import { getLang } from '@/lib/i18n'
 import { backupNow } from '@/lib/cloud'
+import { HowToPlayButton } from '@/components/how-to-play'
 
 /* ------------------------------ persistence ------------------------------ */
 
@@ -310,16 +311,19 @@ export function ParkingGame({ onExit }: Props) {
       >
         {/* header */}
         <div className="flex items-center justify-between gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onExit}
-            className="border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800"
-            aria-label={t.common.backToHub}
-          >
-            <ChevronLeft className="h-4 w-4" />
-            {t.common.backToHub}
-          </Button>
+          <div className="flex items-center gap-1.5">
+            <HowToPlayButton game="parking" variant="icon" />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onExit}
+              className="border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800"
+              aria-label={t.common.backToHub}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              {t.common.backToHub}
+            </Button>
+          </div>
           <div className="flex items-center gap-2">
             <Badge className="border-amber-500/40 bg-amber-500/15 text-amber-300">
               <Crown className="mr-1 h-3 w-3" />
@@ -440,7 +444,7 @@ export function ParkingGame({ onExit }: Props) {
         </div>
       </div>
 
-      <p className="text-center text-xs leading-relaxed text-zinc-500">{t.parking.howto}</p>
+      <p className="text-center text-xs leading-relaxed text-zinc-400">{t.parking.howto}</p>
 
       {/* board */}
       <div className="relative mx-auto w-full max-w-[440px] select-none">
@@ -586,7 +590,7 @@ export function ParkingGame({ onExit }: Props) {
                   </p>
                 )}
                 {newBestTotal && <p className="text-xs font-bold text-emerald-300">{t.parking.newRecord}</p>}
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-zinc-400">
                   {sync?.status === 'synced'
                     ? fmt(t.common.syncRank, { n: sync.rank ?? 0 }).trim()
                     : sync?.status === 'queued' || sync?.status === 'offline'

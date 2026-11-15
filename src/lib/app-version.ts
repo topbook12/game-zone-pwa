@@ -5,4 +5,4 @@
  * - `/api/version` serves it with `no-store` so a phone can ask the server
  *   which build is live (Phase 1 version guard — stale phones self-heal).
  */
-export const APP_VERSION = '2.4.0'
+export const APP_VERSION = '2.5.0'

@@ -121,6 +121,25 @@
   }
 }
 
+/* ------------- Phase 2 touch-target audit (Day 18–19) -------------
+ * Every interactive control is at least 44×44 px on touch screens
+ * (WCAG 2.5.5 / Material guidance). Pointer-capable devices with a
+ * mouse keep their compact desktop sizing. Opt out per-element with
+ * data-compact when a control sits inside a tight canvas HUD. */
+@media (pointer: coarse) {
+  button:not([data-compact]),
+  [role='button']:not([data-compact]) {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Visible keyboard focus everywhere (desktop keyboard-only play) */
+:where(button, a, [role='button'], input, select, textarea):focus-visible {
+  outline: 2px solid var(--color-amber-400, #fbbf24);
+  outline-offset: 2px;
+}
+
 /* ---------------- Turbo Rush game animations ---------------- */
 html,
 body {

@@ -207,7 +207,7 @@ export function ShopDialog({ open, onOpenChange }: Props) {
           </TabsContent>
         </Tabs>
 
-        <p className="pb-1 text-center text-[11px] text-zinc-500">{t.shop.earnMore}</p>
+        <p className="pb-1 text-center text-[11px] text-zinc-400">{t.shop.earnMore}</p>
       </DialogContent>
     </Dialog>
   )

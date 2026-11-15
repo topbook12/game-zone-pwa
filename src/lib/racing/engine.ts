@@ -238,6 +238,8 @@ export class RacingEngine {
   private baseDraw = DRAW_DIST
   private baseDprCap = 1.75
   private baseParticles = 240
+  /** Data-saver mode (Settings center, Phase 2): extra-low graphics budget. */
+  private dataSaver = false
 
   constructor(canvas: HTMLCanvasElement, opts: EngineOptions, sound: SoundEngine) {
     this.canvas = canvas
@@ -315,6 +317,13 @@ export class RacingEngine {
     this.dailySeed = seed
   }
 
+  /** Data-saver (Settings center): shrink draw distance/DPR/particle budget. */
+  setDataSaver(on: boolean): void {
+    if (this.dataSaver === on) return
+    this.dataSaver = on
+    this.resize()
+  }
+
   resize(): void {
     const rect = this.canvas.getBoundingClientRect()
     const w = Math.max(1, Math.round(rect.width))
@@ -325,6 +334,11 @@ export class RacingEngine {
     this.baseDprCap = small ? 1.5 : 1.75
     this.baseDraw = small ? 150 : DRAW_DIST
     this.baseParticles = small ? 140 : 240
+    if (this.dataSaver) {
+      this.baseDprCap = Math.min(this.baseDprCap, 1.1)
+      this.baseDraw = Math.min(this.baseDraw, 110)
+      this.baseParticles = Math.min(this.baseParticles, 90)
+    }
     const dpr = Math.min(this.baseDprCap * this.quality, window.devicePixelRatio || 1)
     this.drawDist = Math.max(70, Math.round(this.baseDraw * this.quality))
     this.maxParticles = Math.round(this.baseParticles * this.quality)
