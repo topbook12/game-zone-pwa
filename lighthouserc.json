@@ -1,0 +1,29 @@
+{
+  "$schema": "https://raw.githubusercontent.com/GoogleChrome/lighthouse-ci/main/docs/schema.json",
+  "ci": {
+    "collect": {
+      "startServerCommand": "bunx next start",
+      "startServerReadyPattern": "[Rr]eady",
+      "url": ["http://127.0.0.1:3000/"],
+      "numberOfRuns": 1,
+      "settings": {
+        "onlyCategories": ["performance", "accessibility", "best-practices", "pwa"]
+      }
+    },
+    "assert": {
+      "assertions": {
+        "categories:performance": ["error", { "minScore": 0.85 }],
+        "categories:accessibility": ["error", { "minScore": 0.9 }],
+        "categories:best-practices": ["warn", { "minScore": 0.85 }],
+        "installable-manifest": ["error", { "minScore": 1 }],
+        "service-worker": ["warn", { "minScore": 1 }],
+        "resource-summary:script-size": ["error", { "maxNumericValue": 500000 }],
+        "resource-summary:total-byte-weight": ["error", { "maxNumericValue": 1500000 }]
+      }
+    },
+    "upload": {
+      "target": "filesystem",
+      "outputDir": ".lighthouseci"
+    }
+  }
+}

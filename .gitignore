@@ -58,3 +58,8 @@ tool-results/
 download/
 Caddyfile
 agent-ctx/
+
+# Playwright + Lighthouse CI artifacts (Phase 3)
+test-results/
+playwright-report/
+.lighthouseci/

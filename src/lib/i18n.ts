@@ -71,7 +71,7 @@ const en = {
     installStep3: 'Or open the menu (⋮) → "Add to Home screen"',
     installStep4: 'Launch it like a real app from your home screen — works offline too!',
     installNote: 'After the first load, all games run completely offline',
-    footerCopyright: 'Game Zone © 2025 • Version 2.5',
+    footerCopyright: 'Game Zone © 2025 • Version 2.6',
     footerOffline: 'Offline-ready PWA',
   },
   premium: {
@@ -572,7 +572,7 @@ const bn: Dict = {
     installStep3: 'অথবা মেনু (⋮) → "Add to Home screen"',
     installStep4: 'হোম স্ক্রিন থেকে আসল অ্যাপের মতো চালু করুন — অফলাইনেও চলবে!',
     installNote: 'প্রথমবার লোডের পর সব গেম সম্পূর্ণ অফলাইনে চলে',
-    footerCopyright: 'গেম জোন © ২০২৫ • ভার্সন ২.৫',
+    footerCopyright: 'গেম জোন © ২০২৫ • ভার্সন ২.৬',
     footerOffline: 'অফলাইন-রেডি PWA',
   },
   premium: {

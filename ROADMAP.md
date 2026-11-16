@@ -38,10 +38,10 @@ AND invisible quality infrastructure. One release per 10 days, quality > speed.
 
 ## Phase 3 — Advanced tooling I: automated QA (Day 21–30) 🤖
 > Goal: all 5 games verified by robots on every commit.
-- [ ] Playwright E2E suite in CI: racing accelerates on touch, quiz answers advance, 2048/snake swipe, parking solves a level — mobile + desktop profiles
-- [ ] Lighthouse CI budgets: performance ≥ 85, accessibility ≥ 90, PWA installable, bundle-size caps — build fails if budget blown
-- [ ] CI screenshots artifact: hub + every game at 375 px, reviewed on release
-- [ ] Fix every issue the robots find (they will find some)
+- [x] Playwright E2E suite in CI: racing accelerates on touch, quiz answers advance, 2048/snake swipe, parking solves a level — mobile (375 px touch) + desktop profiles; hermetic (all `/api/*` blacked out → proves offline-first); every test fails on ANY console/page error
+- [x] Lighthouse CI budgets: performance ≥ 85, accessibility ≥ 90, PWA installable (installable-manifest), bundle-size caps (script ≤ 500 KB, total ≤ 1.5 MB — Phase 4 tightens) — build fails if budget blown
+- [x] CI screenshots artifact: hub + every game at 375 px, uploaded every run, reviewed on release
+- [x] Fix every issue the robots find: language-toggle group aria changes with language (test now targets buttons directly), win-dialog move-count locator scoping, self-inflicted `net::ERR_FAILED` from the API blackout excluded from the error gate
 
 **Milestone:** regressions die in CI, never on a player's phone.
 
