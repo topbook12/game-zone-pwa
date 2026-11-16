@@ -38,7 +38,7 @@ AND invisible quality infrastructure. One release per 10 days, quality > speed.
 
 ## Phase 3 — Advanced tooling I: automated QA (Day 21–30) 🤖
 > Goal: all 5 games verified by robots on every commit.
-- [x] Playwright E2E suite in CI: racing accelerates on touch, quiz answers advance, 2048/snake swipe, parking solves a level — mobile (375 px touch) + desktop profiles; hermetic (all `/api/*` blacked out → proves offline-first); every test fails on ANY console/page error
+- [x] Playwright E2E suite in CI: racing accelerates on touch, quiz answers advance, 2048/snake swipe, parking solves a level — mobile (375 px touch) + desktop profiles; hermetic (all `/api/*` blacked out → proves offline-first); every test fails on ANY console/page error — *suite + config + CI job definition done; the workflow file lands on GitHub the moment the owner's new token has the `workflow` scope (held on local branch `ci-workflow`)*
 - [x] Lighthouse CI budgets: performance ≥ 85, accessibility ≥ 90, PWA installable (installable-manifest), bundle-size caps (script ≤ 500 KB, total ≤ 1.5 MB — Phase 4 tightens) — build fails if budget blown
 - [x] CI screenshots artifact: hub + every game at 375 px, uploaded every run, reviewed on release
 - [x] Fix every issue the robots find: language-toggle group aria changes with language (test now targets buttons directly), win-dialog move-count locator scoping, self-inflicted `net::ERR_FAILED` from the API blackout excluded from the error gate
@@ -116,6 +116,6 @@ AND invisible quality infrastructure. One release per 10 days, quality > speed.
 
 ## Owner manual actions (outside my reach)
 1. **Vercel token** → unblock the deploy pipeline fix (Phase 1, Day 1–2) — *the current blocker*
-2. **GitHub token reset** (security hygiene — old token exposed in chat)
+2. **GitHub token reset** (security hygiene — old token exposed in chat) — when issuing the new token grant **`repo` + `workflow` scopes**; `workflow` is required to push `.github/workflows/ci.yml` (the robots' CI). Then say the word and I push the `ci-workflow` branch
 3. Optional: custom domain (৳/year) for a branded URL
 4. Optional: real ad-network account approval (adapter is ready — one constant swap)
